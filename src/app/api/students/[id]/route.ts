@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const id = Number(params.id)
+        const { id: idStr } = await params
+        const id = Number(idStr)
         if (isNaN(id)) return NextResponse.json({ success: false, error: 'Invalid ID' }, { status: 400 })
 
         const student = await prisma.student.findUnique({

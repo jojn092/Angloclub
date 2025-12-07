@@ -4,10 +4,10 @@ import Link from 'next/link'
 import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Youtube, Send } from 'lucide-react'
 
 interface FooterProps {
-    translations: Record<string, unknown>
+    translations?: Record<string, unknown>
 }
 
-export default function Footer({ translations }: FooterProps) {
+export default function Footer({ translations = {} }: FooterProps) {
     const t = translations as Record<string, Record<string, string>>
 
     const quickLinks = [

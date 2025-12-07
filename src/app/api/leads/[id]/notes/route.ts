@@ -28,7 +28,7 @@ export async function POST(
             data: {
                 leadId,
                 content: validation.data.content,
-                author: 'Admin', // TODO: Get from auth token if available
+                // author: 'Admin', // Removed: author field not in schema
             },
         })
 

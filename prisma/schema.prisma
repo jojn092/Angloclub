@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Enums
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("TEACHER") // ADMIN, MANAGER, TEACHER
+  phone     String?
+  isActive  Boolean  @default(true)
+  
+  // Relations
+  groups    Group[]  @relation("TeacherGroups")
+  salary    Salary[]
+  logs      Log[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id        Int       @id @default(autoincrement())
+  name      String
+  phone     String
+  course    String
+  status    String    @default("new") // new, processing, won, lost
+  message   String?
+  source    String?
+  
+  // Relations
+  student   Student?
+  notes     Note[]
+  logs      LeadLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  content   String
+  authorId  Int?
+  leadId    Int
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Course {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Int      @default(0)
+  groups    Group[]
+}
+
+model Classroom {
+  id        Int      @id @default(autoincrement())
+  name      String
+  capacity  Int      @default(10)
+  groups    Group[]
+}
+
+model Group {
+  id          Int      @id @default(autoincrement())
+  name        String
+  level       String
+  
+  courseId    Int
+  course      Course   @relation(fields: [courseId], references: [id])
+  
+  teacherId   Int
+  teacher     User     @relation("TeacherGroups", fields: [teacherId], references: [id])
+  
+  roomId      Int?
+  room        Classroom? @relation(fields: [roomId], references: [id])
+  
+  students    Student[]
+  lessons     Lesson[]
+  schedules   ScheduleTemplate[]
+
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Student {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  email     String?
+  balance   Int      @default(0)
+  
+  leadId    Int?     @unique
+  lead      Lead?    @relation(fields: [leadId], references: [id])
+  
+  groups    Group[]
+  attendance Attendance[]
+  payments  Payment[]
+
+  createdAt DateTime @default(now())
+}
+
+model ScheduleTemplate {
+  id        Int      @id @default(autoincrement())
+  dayOfWeek Int      // 0=Sun, 1=Mon...
+  startTime String   // "10:00"
+  duration  Int      // minutes
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  topic     String?
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  attendance Attendance[]
+  isCompleted Boolean @default(false)
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId  Int
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  status    String   // PRESENT, ABSENT, EXCUSED
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  amount    Int
+  date      DateTime @default(now())
+  method    String
+  comment   String?
+  
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  recordedBy Int?
+}
+
+model Salary {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int
+  period    String
+  paid      Boolean  @default(false)
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  amount      Int
+  category    String   // Rent, Salary, Marketing, Office, Other
+  description String?
+  date        DateTime @default(now())
+  recordedBy  Int?
+}
+
+model Log {
+  id        Int      @id @default(autoincrement())
+  action    String
+  details   String?
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model LeadLog {
+  id        Int      @id @default(autoincrement())
+  action    String
+  details   String?
+  leadId    Int
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model TestResult {
+  id           Int      @id @default(autoincrement())
+  name         String
+  phone        String
+  email        String?
+  score        Int
+  level        String
+  answers      String
+  createdAt    DateTime @default(now())
+}

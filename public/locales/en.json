@@ -1,0 +1,191 @@
+{
+    "meta": {
+        "title": "AngloClub Astana — English Language Courses",
+        "description": "Language school in Astana. IELTS, conversational English, courses for children and adults. Sign up for a free trial lesson!"
+    },
+    "nav": {
+        "home": "Home",
+        "about": "About",
+        "courses": "Courses",
+        "schedule": "Schedule",
+        "teachers": "Teachers",
+        "gallery": "Gallery",
+        "faq": "FAQ",
+        "contacts": "Contacts",
+        "corporate": "For Business",
+        "test": "Level Test"
+    },
+    "hero": {
+        "title": "English in Astana",
+        "subtitle": "Sign up for a free trial lesson",
+        "description": "Modern methods, experienced teachers, results from the first class",
+        "cta": "Enroll Now",
+        "whatsapp": "WhatsApp",
+        "test": "Take Test"
+    },
+    "features": {
+        "title": "Why Choose Us",
+        "experience": {
+            "title": "10+ Years of Experience",
+            "description": "Proven English teaching methodology"
+        },
+        "teachers": {
+            "title": "Certified Teachers",
+            "description": "CELTA, TESOL and international certificates"
+        },
+        "groups": {
+            "title": "Small Groups up to 8",
+            "description": "Individual approach to each student"
+        },
+        "results": {
+            "title": "Guaranteed Results",
+            "description": "Level improvement in 3-6 months"
+        }
+    },
+    "stats": {
+        "students": "Students",
+        "years": "Years of Experience",
+        "graduates": "Graduates",
+        "courses": "Courses"
+    },
+    "courses": {
+        "title": "Our Courses",
+        "subtitle": "Choose the program that suits you",
+        "kids": {
+            "title": "English for Kids",
+            "ages": "4-7 years",
+            "description": "Play-based format, development through creativity"
+        },
+        "teens": {
+            "title": "For Teenagers",
+            "ages": "8-16 years",
+            "description": "School curriculum + speaking practice"
+        },
+        "adults": {
+            "title": "For Adults",
+            "ages": "17+ years",
+            "description": "General English, Business English"
+        },
+        "ielts": {
+            "title": "IELTS/TOEFL",
+            "description": "Preparation for international exams"
+        },
+        "speaking": {
+            "title": "Speaking Club",
+            "description": "Practice with native speakers"
+        },
+        "intensive": {
+            "title": "Intensive Courses",
+            "description": "Fast results in a short time"
+        },
+        "enroll": "Enroll",
+        "details": "Learn More",
+        "from": "from"
+    },
+    "testimonials": {
+        "title": "Student Reviews",
+        "subtitle": "What they say about us"
+    },
+    "form": {
+        "title": "Sign up for a trial lesson",
+        "name": "Your name",
+        "phone": "Phone",
+        "course": "Select course",
+        "message": "Message (optional)",
+        "submit": "Submit",
+        "submitting": "Sending...",
+        "success": "Thank you! We will contact you soon.",
+        "error": "Error sending. Please try again.",
+        "privacy": "By clicking the button, you agree to the privacy policy"
+    },
+    "comparison": {
+        "title": "Why We're Better",
+        "feature": "Feature",
+        "us": "AngloClub",
+        "others": "Other Schools"
+    },
+    "cta": {
+        "call": "Call",
+        "whatsapp": "WhatsApp",
+        "enroll": "Enroll",
+        "test": "Test"
+    },
+    "footer": {
+        "address": "Astana, Bukhar Zhyrau 34/2",
+        "phone": "+7 (700) 123-45-67",
+        "email": "info@angloclub.kz",
+        "workHours": "Mon-Sat: 9:00 AM - 9:00 PM",
+        "social": "Follow Us",
+        "links": "Quick Links",
+        "copyright": "© 2024 AngloClub Astana. All rights reserved."
+    },
+    "about": {
+        "title": "About Us",
+        "mission": "Our Mission",
+        "history": "History",
+        "team": "Our Team",
+        "certificates": "Certificates & Licenses"
+    },
+    "schedule": {
+        "title": "Schedule & Prices",
+        "filter": "Filter",
+        "day": "Day",
+        "time": "Time",
+        "course": "Course",
+        "teacher": "Teacher",
+        "price": "Price"
+    },
+    "calculator": {
+        "title": "Price Calculator",
+        "course": "Course",
+        "format": "Format",
+        "duration": "Duration",
+        "discount": "Discount",
+        "total": "Total",
+        "perMonth": "per month"
+    },
+    "faq": {
+        "title": "Frequently Asked Questions",
+        "search": "Search questions..."
+    },
+    "contacts": {
+        "title": "Contacts",
+        "form": "Write to Us",
+        "map": "How to Find Us"
+    },
+    "test": {
+        "title": "English Level Test",
+        "start": "Start Test",
+        "question": "Question",
+        "of": "of",
+        "next": "Next",
+        "finish": "Finish",
+        "result": "Your Result",
+        "level": "Level",
+        "recommendation": "Recommended Course"
+    },
+    "admin": {
+        "title": "Admin Panel",
+        "leads": "Leads",
+        "export": "Export",
+        "filter": "Filter",
+        "status": "Status",
+        "all": "All",
+        "new": "New",
+        "processing": "Processing",
+        "enrolled": "Enrolled",
+        "search": "Search...",
+        "logout": "Logout"
+    },
+    "common": {
+        "loading": "Loading...",
+        "error": "Error",
+        "success": "Success",
+        "cancel": "Cancel",
+        "save": "Save",
+        "delete": "Delete",
+        "edit": "Edit",
+        "close": "Close",
+        "back": "Back"
+    }
+}

@@ -42,6 +42,9 @@ export default function AdminHeader({ onLogout, title }: AdminHeaderProps) {
                             <a href="/admin/groups" className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] rounded-md transition-colors">
                                 Группы
                             </a>
+                            <a href="/admin/students" className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] rounded-md transition-colors">
+                                Студенты
+                            </a>
                             <a href="/admin/schedule" className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] rounded-md transition-colors">
                                 Расписание
                             </a>
@@ -73,6 +76,7 @@ export default function AdminHeader({ onLogout, title }: AdminHeaderProps) {
                     <div className="flex p-2 gap-2 min-w-max">
                         <a href="/admin" className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-md">Заявки</a>
                         <a href="/admin/groups" className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] rounded-md">Группы</a>
+                        <a href="/admin/students" className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] rounded-md">Студенты</a>
                         <a href="/admin/schedule" className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] rounded-md">Расписание</a>
                         <a href="/admin/finance" className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] rounded-md">Финансы</a>
                     </div>

@@ -28,7 +28,12 @@ export default function LoginPage() {
 
             if (res.ok && data.success) {
                 // Redirect to admin dashboard
-                window.location.href = '/admin'
+                // Redirect based on role
+                if (data.user?.role === 'TEACHER') {
+                    window.location.href = '/teacher'
+                } else {
+                    window.location.href = '/admin'
+                }
             } else {
                 setError(data.error || 'Ошибка входа')
             }

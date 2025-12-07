@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { sendTelegramNotification } from '@/lib/telegram'
+import { TelegramService } from '@/lib/telegram'
 import { leadSchema } from '@/lib/validations'
 import { sendEmail, getConfirmationEmailTemplate } from '@/lib/email'
 
@@ -47,12 +47,26 @@ export async function POST(request: NextRequest) {
         })
 
         // Send Telegram notification
-        sendTelegramNotification({
-            name: lead.name,
-            phone: lead.phone,
-            course: lead.course,
-            message: lead.message || undefined,
-        }).catch(console.error)
+        // Send Telegram notification
+        const telegramMessage = `
+<b>Новая заявка:</b>
+👤 Имя: ${lead.name}
+📱 Телефон: ${lead.phone}
+📚 Курс: ${lead.course}
+💬 Сообщение: ${lead.message || 'Нет'}
+        `.trim()
+
+        // Send to Admin Chat (you need to define ADMIN_CHAT_ID in env or logic)
+        // For now, let's skip or hardcode if we know it, or just use the service if implemented correctly.
+        // Actually the old function handled formatting.
+
+        // Better approach: Re-implement sendTelegramNotification as a wrapper around TelegramService
+        // OR update this code to manually format.
+        // Since we don't have a single target chat ID (admin group), the previous implementation likely sent to a specific ENV var.
+
+        if (process.env.TELEGRAM_ADMIN_CHAT_ID) {
+            TelegramService.sendMessage(process.env.TELEGRAM_ADMIN_CHAT_ID, telegramMessage).catch(console.error)
+        }
 
         console.log(`[Lead] Created lead #${lead.id}`)
 

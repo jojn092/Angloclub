@@ -40,6 +40,7 @@ model Lead {
   student   Student?
   notes     Note[]
   logs      LeadLog[]
+  telegramChats TelegramChat[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -194,4 +195,39 @@ model TestResult {
   level        String
   answers      String
   createdAt    DateTime @default(now())
+}
+
+model TelegramChat {
+  id           Int       @id @default(autoincrement())
+  chatId       String    @unique // External Telegram Chat ID
+  username     String?
+  firstName    String?
+  lastName     String?
+  photoUrl     String?
+  type         String    @default("private") // private, group, etc.
+  
+  leadId       Int?
+  lead         Lead?     @relation(fields: [leadId], references: [id])
+  
+  messages     TelegramMessage[]
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model TelegramMessage {
+  id           Int          @id @default(autoincrement())
+  chatId       Int
+  chat         TelegramChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  messageId    Int?         // External Telegram Message ID
+  text         String?
+  photo        String?
+  voice        String?
+  document     String?
+  
+  isFromBot    Boolean      @default(false)
+  isRead       Boolean      @default(false)
+  
+  createdAt    DateTime     @default(now())
 }

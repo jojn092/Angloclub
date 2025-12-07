@@ -123,7 +123,7 @@ SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_app_password
 ```
 
-## 🚢 Деплой
+## 🚢 Деплойzzzzzzz
 
 ### Vercel
 ```bash

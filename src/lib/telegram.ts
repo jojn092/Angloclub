@@ -1,64 +1,152 @@
-/**
- * Telegram Bot Integration
- * Sends notifications to admin when new leads are created
- */
+import { PrismaClient } from '@prisma/client'
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID
+const prisma = new PrismaClient()
 
-interface TelegramMessage {
-    name: string
-    phone: string
-    course: string
-    message?: string
+// Types
+export interface TelegramUpdate {
+    update_id: number
+    message?: TelegramMessage
+    callback_query?: TelegramCallbackQuery
 }
 
-export async function sendTelegramNotification(data: TelegramMessage): Promise<boolean> {
-    // Skip if not configured
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_CHAT_ID) {
-        console.log('[Telegram] Bot not configured, skipping notification')
-        return false
-    }
+export interface TelegramMessage {
+    message_id: number
+    from: TelegramUser
+    chat: TelegramChat
+    date: number
+    text?: string
+    photo?: TelegramPhoto[]
+    voice?: TelegramVoice
+    document?: TelegramDocument
+}
 
-    const text = `
-🆕 *Новая заявка на сайте!*
+export interface TelegramUser {
+    id: number
+    is_bot: boolean
+    first_name: string
+    last_name?: string
+    username?: string
+}
 
-👤 *Имя:* ${escapeMarkdown(data.name)}
-📱 *Телефон:* ${escapeMarkdown(data.phone)}
-📚 *Курс:* ${escapeMarkdown(data.course)}
-${data.message ? `💬 *Сообщение:* ${escapeMarkdown(data.message)}` : ''}
+export interface TelegramChat {
+    id: number
+    type: string
+    title?: string
+    username?: string
+    first_name?: string
+    last_name?: string
+}
 
-⏰ ${new Date().toLocaleString('ru-KZ', { timeZone: 'Asia/Almaty' })}
-  `.trim()
+export interface TelegramPhoto {
+    file_id: string
+    file_unique_id: string
+    width: number
+    height: number
+    file_size?: number
+}
 
-    try {
-        const response = await fetch(
-            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: TELEGRAM_ADMIN_CHAT_ID,
-                    text,
-                    parse_mode: 'Markdown',
-                }),
-            }
-        )
+export interface TelegramVoice {
+    file_id: string
+    file_unique_id: string
+    duration: number
+    mime_type?: string
+    file_size?: number
+}
 
-        if (!response.ok) {
-            const error = await response.text()
-            console.error('[Telegram] Failed to send message:', error)
-            return false
+export interface TelegramDocument {
+    file_id: string
+    file_unique_id: string
+    file_name?: string
+    mime_type?: string
+    file_size?: number
+}
+
+export interface TelegramCallbackQuery {
+    id: string
+    from: TelegramUser
+    message?: TelegramMessage
+    data?: string
+}
+
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`
+
+export class TelegramService {
+
+    /**
+     * Send a text message to a chat
+     */
+    static async sendMessage(chatId: number | string, text: string) {
+        if (!BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN is not defined')
+
+        const res = await fetch(`${API_URL}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: text,
+                parse_mode: 'HTML'
+            })
+        })
+
+        if (!res.ok) {
+            const err = await res.json()
+            console.error('Telegram Send Error:', err)
+            throw new Error(`Failed to send message: ${err.description}`)
         }
 
-        console.log('[Telegram] Notification sent successfully')
-        return true
-    } catch (error) {
-        console.error('[Telegram] Error sending notification:', error)
-        return false
+        return await res.json()
     }
-}
 
-function escapeMarkdown(text: string): string {
-    return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&')
+    /**
+     * Handle incoming webhook update
+     */
+    static async handleUpdate(update: TelegramUpdate) {
+        if (update.message) {
+            await this.processMessage(update.message)
+        }
+        // Handle callback queries later
+    }
+
+    /**
+     * Process a single message
+     */
+    private static async processMessage(msg: TelegramMessage) {
+        const chatId = msg.chat.id.toString()
+        const text = msg.text || ''
+        const type = msg.chat.type
+
+        // 1. Find or create Chat
+        let chat = await prisma.telegramChat.findUnique({
+            where: { chatId }
+        })
+
+        if (!chat) {
+            chat = await prisma.telegramChat.create({
+                data: {
+                    chatId,
+                    username: msg.chat.username,
+                    firstName: msg.chat.first_name,
+                    lastName: msg.chat.last_name,
+                    type,
+                    photoUrl: '' // TODO: Fetch user profile photo
+                }
+            })
+
+            // Auto-reply for new users?
+            // await this.sendMessage(chatId, "Здравствуйте! Менеджер скоро ответит вам.")
+        }
+
+        // 2. Save Message
+        await prisma.telegramMessage.create({
+            data: {
+                chatId: chat.id,
+                messageId: msg.message_id,
+                text: text,
+                isFromBot: false,
+                isRead: false,
+                // TODO: Handle photos/docs
+            }
+        })
+    }
 }

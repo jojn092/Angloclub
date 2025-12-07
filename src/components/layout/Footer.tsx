@@ -48,34 +48,29 @@ export default function Footer({ translations = {} }: FooterProps) {
                         </p>
                         <div className="flex gap-3">
                             <a
-                                href="https://instagram.com"
+                                href="https://www.instagram.com/angloclub.ast"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-10 h-10 rounded-lg bg-[var(--surface-hover)] hover:bg-gradient-to-br hover:from-pink-500 hover:to-purple-600 hover:text-white flex items-center justify-center text-[var(--text-muted)] transition-all"
+                                aria-label="Instagram"
                             >
                                 <Instagram size={20} />
                             </a>
                             <a
-                                href="https://facebook.com"
+                                href="https://2gis.kz/astana/geo/70000001079190548"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-10 h-10 rounded-lg bg-[var(--surface-hover)] hover:bg-blue-600 hover:text-white flex items-center justify-center text-[var(--text-muted)] transition-all"
+                                className="w-10 h-10 rounded-lg bg-[var(--surface-hover)] hover:bg-green-600 hover:text-white flex items-center justify-center text-[var(--text-muted)] transition-all"
+                                aria-label="2GIS"
                             >
-                                <Facebook size={20} />
+                                <MapPin size={20} />
                             </a>
                             <a
-                                href="https://youtube.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-10 h-10 rounded-lg bg-[var(--surface-hover)] hover:bg-red-600 hover:text-white flex items-center justify-center text-[var(--text-muted)] transition-all"
-                            >
-                                <Youtube size={20} />
-                            </a>
-                            <a
-                                href="https://t.me/angloclub"
+                                href="https://t.me/Angloclubkz_bot"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-10 h-10 rounded-lg bg-[var(--surface-hover)] hover:bg-[#0088cc] hover:text-white flex items-center justify-center text-[var(--text-muted)] transition-all"
+                                aria-label="Telegram Bot"
                             >
                                 <Send size={20} />
                             </a>
@@ -135,10 +130,10 @@ export default function Footer({ translations = {} }: FooterProps) {
                             <li className="flex items-center gap-3">
                                 <Phone size={20} className="text-[var(--primary)] shrink-0" />
                                 <a
-                                    href="tel:+77001234567"
+                                    href="tel:+77020296315"
                                     className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
                                 >
-                                    {t.footer?.phone || '+7 (700) 123-45-67'}
+                                    {t.footer?.phone || '+7 702 029 6315'}
                                 </a>
                             </li>
                             <li className="flex items-center gap-3">
@@ -153,7 +148,7 @@ export default function Footer({ translations = {} }: FooterProps) {
                             <li className="flex items-center gap-3">
                                 <Clock size={20} className="text-[var(--primary)] shrink-0" />
                                 <span className="text-[var(--text-muted)]">
-                                    {t.footer?.workHours || 'Пн-Сб: 9:00 - 21:00'}
+                                    {t.footer?.workHours || 'Ежедневно: 9:00 - 21:00'}
                                 </span>
                             </li>
                         </ul>
@@ -163,7 +158,7 @@ export default function Footer({ translations = {} }: FooterProps) {
                 {/* Bottom Bar */}
                 <div className="mt-12 pt-8 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-[var(--text-muted)]">
-                        {t.footer?.copyright || '© 2024 AngloClub Astana. Все права защищены.'}
+                        {t.footer?.copyright || '© 2025 AngloClub Astana. Все права защищены.'}
                     </p>
                     <div className="flex gap-4 text-sm">
                         <Link href="/privacy" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">

@@ -6,43 +6,43 @@
 import nodemailer from 'nodemailer'
 
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
 })
 
 interface EmailData {
-    to: string
-    subject: string
-    html: string
+  to: string
+  subject: string
+  html: string
 }
 
 export async function sendEmail(data: EmailData): Promise<boolean> {
-    // Skip if not configured
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-        console.log('[Email] SMTP not configured, skipping email')
-        return false
-    }
+  // Skip if not configured
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+    console.log('[Email] SMTP not configured, skipping email')
+    return false
+  }
 
-    try {
-        await transporter.sendMail({
-            from: `"AngloClub Astana" <${process.env.SMTP_USER}>`,
-            ...data,
-        })
-        console.log('[Email] Sent successfully to:', data.to)
-        return true
-    } catch (error) {
-        console.error('[Email] Failed to send:', error)
-        return false
-    }
+  try {
+    await transporter.sendMail({
+      from: `"AngloClub Astana" <${process.env.SMTP_USER}>`,
+      ...data,
+    })
+    console.log('[Email] Sent successfully to:', data.to)
+    return true
+  } catch (error) {
+    console.error('[Email] Failed to send:', error)
+    return false
+  }
 }
 
 export function getConfirmationEmailTemplate(name: string, course: string): string {
-    return `
+  return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -66,12 +66,12 @@ export function getConfirmationEmailTemplate(name: string, course: string): stri
           <p>Здравствуйте, <strong>${name}</strong>!</p>
           <p>Спасибо за интерес к нашей школе. Мы получили вашу заявку на курс <strong>"${course}"</strong>.</p>
           <p>Наш менеджер свяжется с вами в ближайшее время для уточнения деталей и подбора удобного расписания.</p>
-          <p><a href="https://wa.me/77001234567" class="button">Написать в WhatsApp</a></p>
+          <p><a href="https://wa.me/77020296315" class="button">Написать в WhatsApp</a></p>
           <p>С уважением,<br>Команда AngloClub Astana</p>
         </div>
         <div class="footer">
           <p>📍 Астана, Бухар Жырау 34/2</p>
-          <p>📞 +7 (700) 123-45-67</p>
+          <p>📞 +7 702 029 6315</p>
         </div>
       </div>
     </body>

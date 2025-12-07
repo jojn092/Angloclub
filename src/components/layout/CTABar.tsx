@@ -12,7 +12,7 @@ interface CTABarProps {
 
 export default function CTABar({
     onEnrollClick,
-    whatsappNumber = '+77001234567',
+    whatsappNumber = '+77020296315',
     onTestClick,
     className,
 }: CTABarProps) {

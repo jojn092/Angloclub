@@ -180,7 +180,7 @@ export default function LeadForm({ translations, onSubmit }: LeadFormProps) {
                                 </Button>
 
                                 <a
-                                    href={`https://wa.me/77001234567?text=${encodeURIComponent(`Здравствуйте! Хочу записаться на курс: ${formData.course || 'не выбран'}`)}`}
+                                    href={`https://wa.me/77020296315?text=${encodeURIComponent(`Здравствуйте! Хочу записаться на курс: ${formData.course || 'не выбран'}`)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex-1"

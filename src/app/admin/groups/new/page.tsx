@@ -6,24 +6,87 @@ import AdminHeader from '@/components/admin/AdminHeader'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 
-// Mock Data (In real app, fetch from API)
-// We need endpoints for Courses, Teachers, Rooms
-// For now, I'll hardcode or fetch if available. 
-// Since we have seed data, let's try to fetch referenced data or hardcode for MVP quick test.
-// I will create simple API endpoints for options next.
-
 export default function CreateGroupPage() {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
+    const [options, setOptions] = useState({
+        courses: [] as any[],
+        teachers: [] as any[],
+        rooms: [] as any[]
+    })
+
     const [formData, setFormData] = useState({
         name: '',
         level: 'A1',
-        courseId: '1', // Default to first
-        teacherId: '1', // Default to first (Admin)
-        roomId: '1',
+        courseId: '',
+        teacherId: '',
+        roomId: '',
         days: [] as number[],
         time: '10:00'
     })
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [coursesRes, teachersRes, roomsRes] = await Promise.all([
+                    fetch('/api/courses'),
+                    fetch('/api/users/teachers'),
+                    fetch('/api/rooms')
+                ])
+
+                const courses = await coursesRes.json()
+                const teachers = await teachersRes.json()
+                const rooms = await roomsRes.json()
+
+                setOptions({
+                    courses: Array.isArray(courses) ? courses : [],
+                    teachers: Array.isArray(teachers) ? teachers : [],
+                    rooms: Array.isArray(rooms) ? rooms : []
+                })
+
+                // Set defaults if available
+                if (courses.length > 0) setFormData(prev => ({ ...prev, courseId: courses[0].id.toString() }))
+                if (teachers.length > 0) setFormData(prev => ({ ...prev, teacherId: teachers[0].id.toString() }))
+                if (rooms.length > 0) setFormData(prev => ({ ...prev, roomId: rooms[0].id.toString() }))
+
+            } catch (error) {
+                console.error('Failed to load options', error)
+            }
+        }
+        fetchData()
+    }, [])
+
+    const initializeDefaults = async () => {
+        setIsLoading(true)
+        try {
+            await fetch('/api/seed-full')
+            // Reload page to fetch new options
+            window.location.reload()
+        } catch (error) {
+            alert('Failed to initialize')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    if (!isLoading && options.courses.length === 0 && options.rooms.length === 0) {
+        return (
+            <div className="min-h-screen bg-[var(--background)]">
+                <AdminHeader onLogout={() => window.location.href = '/admin/login'} />
+                <main className="max-w-3xl mx-auto px-4 py-6">
+                    <Card className="text-center py-12">
+                        <h2 className="text-xl font-bold mb-4 text-[var(--text)]">Настройка системы</h2>
+                        <p className="text-[var(--text-muted)] mb-6">
+                            Похоже, база данных пуста. Давайте создадим стандартные курсы (General English, IELTS) и кабинеты.
+                        </p>
+                        <Button onClick={initializeDefaults} isLoading={isLoading}>
+                            Заполнить базу стандартными данными
+                        </Button>
+                    </Card>
+                </main>
+            </div>
+        )
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -41,13 +104,16 @@ export default function CreateGroupPage() {
                 })
             })
 
+            const data = await res.json()
+
             if (res.ok) {
                 router.push('/admin/groups')
             } else {
-                alert('Ошибка при создании группы')
+                alert(data.error || 'Ошибка при создании группы')
             }
         } catch (error) {
             console.error(error)
+            alert('Ошибка сети')
         } finally {
             setIsLoading(false)
         }
@@ -114,10 +180,10 @@ export default function CreateGroupPage() {
                                     onChange={e => setFormData({ ...formData, courseId: e.target.value })}
                                     className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
                                 >
-                                    {/* Hardcoded for now, ideally fetch from API */}
-                                    <option value="1">General English</option>
-                                    <option value="2">IELTS Preparation</option>
-                                    <option value="3">Kids English</option>
+                                    {options.courses.length === 0 && <option value="">Нет доступных курсов</option>}
+                                    {options.courses.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -130,7 +196,10 @@ export default function CreateGroupPage() {
                                     onChange={e => setFormData({ ...formData, teacherId: e.target.value })}
                                     className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
                                 >
-                                    <option value="1">Главный Администратор</option>
+                                    {options.teachers.length === 0 && <option value="">Нет учителей</option>}
+                                    {options.teachers.map(t => (
+                                        <option key={t.id} value={t.id}>{t.name} ({t.role})</option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -143,9 +212,10 @@ export default function CreateGroupPage() {
                                     onChange={e => setFormData({ ...formData, roomId: e.target.value })}
                                     className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
                                 >
-                                    <option value="1">Blue Room</option>
-                                    <option value="2">Red Room</option>
-                                    <option value="3">Online</option>
+                                    {options.rooms.length === 0 && <option value="">Нет кабинетов</option>}
+                                    {options.rooms.map(r => (
+                                        <option key={r.id} value={r.id}>{r.name}</option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -173,8 +243,8 @@ export default function CreateGroupPage() {
                                         type="button"
                                         onClick={() => toggleDay(day)}
                                         className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${formData.days.includes(day)
-                                                ? 'bg-[var(--primary)] text-white'
-                                                : 'bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border)]'
+                                            ? 'bg-[var(--primary)] text-white'
+                                            : 'bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border)]'
                                             }`}
                                     >
                                         {daysMap[day]}
@@ -195,6 +265,7 @@ export default function CreateGroupPage() {
                                 type="submit"
                                 variant="primary"
                                 isLoading={isLoading}
+                                disabled={!formData.courseId || !formData.teacherId}
                             >
                                 Создать группу
                             </Button>

@@ -15,6 +15,7 @@ export async function GET(request: Request) {
             select: {
                 id: true,
                 name: true,
+                email: true,
                 hourlyRate: true, // Assuming hourlyRate is directly on the User model
                 groups: {
                     select: { id: true }
@@ -60,15 +61,19 @@ export async function GET(request: Request) {
             const salaryRecord = teacher.salary.find(s => s.period === month)
 
             return {
-                teacherId: teacher.id,
-                teacherName: teacher.name,
+                teacher: {
+                    id: teacher.id,
+                    name: teacher.name,
+                    email: teacher.email
+                },
                 hourlyRate: teacher.hourlyRate,
                 lessonCount: teacherLessons.length,
                 hoursWorked: Number(hoursWorked.toFixed(1)),
                 calculatedSalary,
                 status: salaryRecord ? (salaryRecord.paid ? 'PAID' : 'PENDING') : 'UNPAID',
                 paidAmount: salaryRecord ? salaryRecord.amount : 0,
-                salaryId: salaryRecord?.id
+                salaryId: salaryRecord?.id,
+                isPaid: !!salaryRecord?.paid // Helper for UI
             }
         })
 

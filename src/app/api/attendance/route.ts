@@ -120,6 +120,15 @@ export async function POST(request: Request) {
 
                 // If new status consumes lesson, and old didn't (or didn't exist)
                 if (isConsuming(status) && (!oldStatus || !isConsuming(oldStatus))) {
+                    // STRICT MODE: Check if student has lessons
+                    const student = await tx.student.findUnique({
+                        where: { id: studentId },
+                        select: { lessons: true }
+                    })
+
+                    if (student && student.lessons <= 0) {
+                        throw new Error(`Student ${studentId} has no remaining lessons`)
+                    }
                     lessonChange = -1
                 }
                 // If new status DOES NOT consume, but old DID
@@ -136,10 +145,7 @@ export async function POST(request: Request) {
                 }
             }
 
-            // 4. Update Attendance Records (Delete all and recreate is simpler but strictly we should upsert)
-            // But strict Recreate is acceptable for this scale if we handle IDs.
-            // Actually, map logic handled logic. Now let's save the state.
-
+            // 4. Update Attendance Records
             // Delete old
             await tx.attendance.deleteMany({ where: { lessonId: lesson.id } })
 
@@ -158,8 +164,8 @@ export async function POST(request: Request) {
         })
 
         return NextResponse.json({ success: true, data: result })
-    } catch (error) {
+    } catch (error: any) {
         console.error('Attendance Save Error:', error)
-        return NextResponse.json({ success: false, error: 'Failed' }, { status: 500 })
+        return NextResponse.json({ success: false, error: error.message || 'Failed' }, { status: 500 })
     }
 }

@@ -114,7 +114,14 @@ model Student {
   leftReason String?
 }
 
-// ... (ScheduleTemplate)
+model ScheduleTemplate {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  dayOfWeek Int      // 1-7 (Mon-Sun)
+  startTime String   // "HH:MM"
+  endTime   String   // "HH:MM"
+}
 
 model Lesson {
   id        Int      @id @default(autoincrement())

@@ -21,7 +21,7 @@ export async function GET(request: Request) {
                 },
                 salary: {
                     where: { period: month },
-                    select: { id: true, amount: true, paid: true }
+                    select: { id: true, amount: true, paid: true, period: true }
                 }
             }
         })

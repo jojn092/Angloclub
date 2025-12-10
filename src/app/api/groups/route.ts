@@ -58,11 +58,19 @@ export async function POST(request: Request) {
                 roomId,
                 // Create schedule templates if days/time provided
                 schedules: (days && time) ? {
-                    create: days.map((day: number) => ({
-                        dayOfWeek: day,
-                        startTime: time,
-                        duration: 60 // Default duration
-                    }))
+                    create: days.map((day: number) => {
+                        // Calculate endTime (default 60 mins)
+                        const [h, m] = time.split(':').map(Number)
+                        const endDate = new Date()
+                        endDate.setHours(h, m + 60)
+                        const endTime = endDate.toTimeString().slice(0, 5)
+
+                        return {
+                            dayOfWeek: day,
+                            startTime: time,
+                            endTime // Required field
+                        }
+                    })
                 } : undefined
             },
             include: {

@@ -34,6 +34,11 @@ interface Student {
             topic?: string
         }
     }[]
+    lead?: {
+        id: number
+        source?: string
+        status: string
+    }
 }
 
 export default function StudentProfilePage() {
@@ -189,6 +194,25 @@ export default function StudentProfilePage() {
                     </Card>
                 </div>
 
+                {/* Lead Info */}
+                {student.lead && (
+                    <Card className="mt-6">
+                        <h3 className="text-lg font-bold text-[var(--text)] mb-4">Информация о заявке</h3>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center p-3 bg-[var(--surface-hover)] rounded-lg">
+                                <span className="text-sm text-[var(--text-secondary)]">Статус</span>
+                                <span className="font-bold text-[var(--text)]">{student.lead.status}</span>
+                            </div>
+                            {student.lead.source && (
+                                <div className="flex justify-between items-center p-3 bg-[var(--surface-hover)] rounded-lg">
+                                    <span className="text-sm text-[var(--text-secondary)]">Источник</span>
+                                    <span className="font-bold text-[var(--text)]">{student.lead.source}</span>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Attendance History */}
                     <Card padding="none" className="overflow-hidden">
@@ -270,59 +294,63 @@ export default function StudentProfilePage() {
                         </div>
                     </Card>
                 </div>
-            </main>
+            </main >
             {/* Balance Modal */}
-            {isBalanceModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-[var(--surface)] w-full max-w-sm rounded-xl shadow-2xl border border-[var(--border)]">
-                        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
-                            <h2 className="text-lg font-bold text-[var(--text)]">Изменить баланс</h2>
-                            <button onClick={() => setIsBalanceModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
-                        </div>
-                        <form onSubmit={handleUpdateBalance} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Новый баланс</label>
-                                <input
-                                    type="number"
-                                    required
-                                    className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)] text-lg font-bold"
-                                    value={balanceForm}
-                                    onChange={e => setBalanceForm(e.target.value)}
-                                />
+            {
+                isBalanceModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                        <div className="bg-[var(--surface)] w-full max-w-sm rounded-xl shadow-2xl border border-[var(--border)]">
+                            <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
+                                <h2 className="text-lg font-bold text-[var(--text)]">Изменить баланс</h2>
+                                <button onClick={() => setIsBalanceModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
                             </div>
-                            <Button type="submit" variant="primary" className="w-full">Сохранить</Button>
-                        </form>
+                            <form onSubmit={handleUpdateBalance} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Новый баланс</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)] text-lg font-bold"
+                                        value={balanceForm}
+                                        onChange={e => setBalanceForm(e.target.value)}
+                                    />
+                                </div>
+                                <Button type="submit" variant="primary" className="w-full">Сохранить</Button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Left Modal */}
-            {isLeftModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-[var(--surface)] w-full max-w-sm rounded-xl shadow-2xl border border-[var(--border)]">
-                        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
-                            <h2 className="text-lg font-bold text-[var(--text)]">Студент ушел</h2>
-                            <button onClick={() => setIsLeftModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
-                        </div>
-                        <form onSubmit={handleStudentLeft} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Причина ухода</label>
-                                <textarea
-                                    required
-                                    rows={3}
-                                    className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                    value={leftReason}
-                                    onChange={e => setLeftReason(e.target.value)}
-                                    placeholder="Например: переезд, дорого..."
-                                />
+            {
+                isLeftModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                        <div className="bg-[var(--surface)] w-full max-w-sm rounded-xl shadow-2xl border border-[var(--border)]">
+                            <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
+                                <h2 className="text-lg font-bold text-[var(--text)]">Студент ушел</h2>
+                                <button onClick={() => setIsLeftModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
                             </div>
-                            <Button type="submit" variant="primary" className="w-full bg-red-600 hover:bg-red-700 text-white border-none">
-                                Подтвердить уход
-                            </Button>
-                        </form>
+                            <form onSubmit={handleStudentLeft} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Причина ухода</label>
+                                    <textarea
+                                        required
+                                        rows={3}
+                                        className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
+                                        value={leftReason}
+                                        onChange={e => setLeftReason(e.target.value)}
+                                        placeholder="Например: переезд, дорого..."
+                                    />
+                                </div>
+                                <Button type="submit" variant="primary" className="w-full bg-red-600 hover:bg-red-700 text-white border-none">
+                                    Подтвердить уход
+                                </Button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }

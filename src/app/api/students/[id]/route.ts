@@ -17,15 +17,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                     orderBy: { date: 'desc' }
                 },
                 attendance: {
-                    orderBy: { lesson: { date: 'desc' } }, // Assuming relation through lesson
-                    // But wait, my attendance model has date? No, it has `lessonId`.
-                    // Let's check schema.
-                    // Schema: Attendance -> lesson -> date.
-                    // But I implemented `date` in POST body, how is it stored?
-                    // Ah, the POST logic for attendance used specific logic. 
-                    // Let's re-verify schema for Attendance.
-                    include: { lesson: true }
-                }
+                    include: { lesson: true },
+                    orderBy: { lesson: { date: 'desc' } }
+                },
+                lead: true
             }
         })
 

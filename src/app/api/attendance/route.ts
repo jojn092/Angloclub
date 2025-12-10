@@ -88,8 +88,27 @@ export async function POST(request: Request) {
                 where: { groupId, date: { gte: start, lte: end } }
             })
 
-            // Get standard duration (future improvement: fetch from Template)
-            const standardDuration = 60
+            // Calculate duration from ScheduleTemplate if possible
+            let standardDuration = 60
+
+            // Get day of week (1-7, Mon-Sun)
+            // lessonDate.getDay() returns 0-6 (Sun-Sat). 
+            // We need 1 (Mon) - 7 (Sun).
+            const dayIndex = lessonDate.getDay()
+            const dayOfWeek = dayIndex === 0 ? 7 : dayIndex
+
+            const schedule = await tx.scheduleTemplate.findFirst({
+                where: { groupId, dayOfWeek }
+            })
+
+            if (schedule) {
+                // Parse HH:MM
+                const [startH, startM] = schedule.startTime.split(':').map(Number)
+                const [endH, endM] = schedule.endTime.split(':').map(Number)
+                const startMins = startH * 60 + startM
+                const endMins = endH * 60 + endM
+                standardDuration = endMins - startMins
+            }
 
             if (!lesson) {
                 lesson = await tx.lesson.create({
@@ -97,7 +116,7 @@ export async function POST(request: Request) {
                         groupId,
                         date: lessonDate,
                         topic: 'Lesson ' + lessonDate.toLocaleDateString(),
-                        duration: standardDuration
+                        duration: standardDuration > 0 ? standardDuration : 60
                     }
                 })
             }

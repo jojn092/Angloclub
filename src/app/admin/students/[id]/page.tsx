@@ -41,6 +41,12 @@ export default function StudentProfilePage() {
     const [student, setStudent] = useState<Student | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
+    // Modal states
+    const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false)
+    const [balanceForm, setBalanceForm] = useState('')
+    const [isLeftModalOpen, setIsLeftModalOpen] = useState(false)
+    const [leftReason, setLeftReason] = useState('')
+
     useEffect(() => {
         if (params.id) {
             fetchStudent(Number(params.id))
@@ -53,12 +59,47 @@ export default function StudentProfilePage() {
             const data = await res.json()
             if (data.success) {
                 setStudent(data.data)
+                setBalanceForm(data.data.balance.toString())
             }
         } catch (error) {
             console.error(error)
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const handleUpdateBalance = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!student) return
+        try {
+            const res = await fetch(`/api/students/${student.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ balance: Number(balanceForm) })
+            })
+            if (res.ok) {
+                alert('Баланс обновлен')
+                setIsBalanceModalOpen(false)
+                fetchStudent(student.id)
+            }
+        } catch (error) { alert('Ошибка') }
+    }
+
+    const handleStudentLeft = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!student) return
+        try {
+            const res = await fetch(`/api/students/${student.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'left', leftReason })
+            })
+            if (res.ok) {
+                alert('Статус обновлен')
+                setIsLeftModalOpen(false)
+                fetchStudent(student.id)
+            }
+        } catch (error) { alert('Ошибка') }
     }
 
     if (isLoading) return <div className="min-h-screen bg-[var(--background)] p-8 text-center">Загрузка...</div>
@@ -130,9 +171,20 @@ export default function StudentProfilePage() {
                                     {student.attendance.filter(a => a.status === 'ABSENT').length}
                                 </span>
                             </div>
-                            <Button className="w-full mt-2" variant="outline" onClick={() => window.location.href = '/admin/payments'}>
-                                Пополнить баланс
-                            </Button>
+
+                            {/* Actions */}
+                            <div className="pt-2 space-y-2">
+                                <Button className="w-full" variant="outline" onClick={() => setIsBalanceModalOpen(true)}>
+                                    Редактировать баланс
+                                </Button>
+                                <Button
+                                    className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                                    variant="outline"
+                                    onClick={() => setIsLeftModalOpen(true)}
+                                >
+                                    Студент ушел
+                                </Button>
+                            </div>
                         </div>
                     </Card>
                 </div>
@@ -219,6 +271,58 @@ export default function StudentProfilePage() {
                     </Card>
                 </div>
             </main>
+            {/* Balance Modal */}
+            {isBalanceModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-[var(--surface)] w-full max-w-sm rounded-xl shadow-2xl border border-[var(--border)]">
+                        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
+                            <h2 className="text-lg font-bold text-[var(--text)]">Изменить баланс</h2>
+                            <button onClick={() => setIsBalanceModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
+                        </div>
+                        <form onSubmit={handleUpdateBalance} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Новый баланс</label>
+                                <input
+                                    type="number"
+                                    required
+                                    className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)] text-lg font-bold"
+                                    value={balanceForm}
+                                    onChange={e => setBalanceForm(e.target.value)}
+                                />
+                            </div>
+                            <Button type="submit" variant="primary" className="w-full">Сохранить</Button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Left Modal */}
+            {isLeftModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-[var(--surface)] w-full max-w-sm rounded-xl shadow-2xl border border-[var(--border)]">
+                        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
+                            <h2 className="text-lg font-bold text-[var(--text)]">Студент ушел</h2>
+                            <button onClick={() => setIsLeftModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
+                        </div>
+                        <form onSubmit={handleStudentLeft} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Причина ухода</label>
+                                <textarea
+                                    required
+                                    rows={3}
+                                    className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
+                                    value={leftReason}
+                                    onChange={e => setLeftReason(e.target.value)}
+                                    placeholder="Например: переезд, дорого..."
+                                />
+                            </div>
+                            <Button type="submit" variant="primary" className="w-full bg-red-600 hover:bg-red-700 text-white border-none">
+                                Подтвердить уход
+                            </Button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

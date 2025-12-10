@@ -55,8 +55,9 @@ export default function PayrollPage() {
 
         setIsSubmitting(true)
         try {
+            const method = selectedTeacher.isPaid ? 'PUT' : 'POST'
             const res = await fetch('/api/finance/payroll', {
-                method: 'POST',
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: selectedTeacher.teacher.id,
@@ -66,17 +67,32 @@ export default function PayrollPage() {
             })
 
             if (res.ok) {
-                alert('Зарплата выплачена ✅')
+                alert(selectedTeacher.isPaid ? 'Зарплата обновлена ✅' : 'Зарплата выплачена ✅')
                 setSelectedTeacher(null)
                 fetchData() // Refresh
             } else {
-                alert('Ошибка при выплате ❌')
+                alert('Ошибка ❌')
             }
         } catch (error) {
             alert('Ошибка сети')
         } finally {
             setIsSubmitting(false)
         }
+    }
+
+    const handleEditClick = (item: PayrollItem) => {
+        setSelectedTeacher(item)
+        setAmount(item.salary.toString())
+    }
+
+    const handleDelete = async (item: PayrollItem) => {
+        if (!confirm('Отменить выплату? Запись о зарплате будет удалена.')) return
+        try {
+            const res = await fetch(`/api/finance/payroll?userId=${item.teacher.id}&period=${month}`, {
+                method: 'DELETE'
+            })
+            if (res.ok) fetchData()
+        } catch (error) { alert('Ошибка') }
     }
 
     return (
@@ -135,10 +151,15 @@ export default function PayrollPage() {
                                             )}
                                         </td>
                                         <td className="p-4 text-right">
-                                            {!item.isPaid && (
+                                            {!item.isPaid ? (
                                                 <Button size="sm" variant="primary" onClick={() => handlePayClick(item)}>
                                                     Выплатить <DollarSign size={14} className="ml-1" />
                                                 </Button>
+                                            ) : (
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(item)}>✎</Button>
+                                                    <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(item)}>✕</Button>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>

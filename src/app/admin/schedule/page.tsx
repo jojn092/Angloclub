@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import AdminHeader from '@/components/admin/AdminHeader'
 import Card from '@/components/ui/Card'
 import { ChevronLeft, ChevronRight, Clock, MapPin, Users } from 'lucide-react'
@@ -87,7 +87,7 @@ export default function SchedulePage() {
 
                     {/* Time Slots */}
                     {TIME_SLOTS.map(hour => (
-                        <>
+                        <Fragment key={hour}>
                             {/* Time Label */}
                             <div key={`time-${hour}`} className="bg-[var(--surface)] p-4 text-xs font-medium text-[var(--text-muted)] border-r border-[var(--border)] flex items-start justify-center">
                                 {hour}:00
@@ -115,7 +115,7 @@ export default function SchedulePage() {
                                     </div>
                                 )
                             })}
-                        </>
+                        </Fragment>
                     ))}
                 </div>
             </main>

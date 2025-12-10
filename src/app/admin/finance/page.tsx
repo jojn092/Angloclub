@@ -31,6 +31,8 @@ export default function FinancePage() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
 
+    const [editingItem, setEditingItem] = useState<Transaction | null>(null)
+
     const [form, setForm] = useState({
         amount: '',
         category: 'Rent',
@@ -61,19 +63,79 @@ export default function FinancePage() {
         }
     }
 
+    const handleDelete = async (id: string, type: 'income' | 'expense') => {
+        if (!confirm('Вы уверены, что хотите удалить эту запись?')) return
+
+        const endpoint = type === 'income' ? '/api/payments' : '/api/expenses'
+        const cleanId = id.replace(/^[pe]-/, '')
+
+        try {
+            const res = await fetch(`${endpoint}?id=${cleanId}`, { method: 'DELETE' })
+            if (res.ok) {
+                fetchData()
+            } else {
+                alert('Ошибка при удалении')
+            }
+        } catch (error) {
+            alert('Ошибка сети')
+        }
+    }
+
+    const openEditModal = (t: Transaction) => {
+        setEditingItem(t)
+        setForm({
+            amount: t.amount.toString(),
+            category: t.category,
+            description: t.description,
+            date: t.date.slice(0, 10)
+        })
+        setIsModalOpen(true)
+    }
+
+    const openCreateModal = () => {
+        setEditingItem(null)
+        setForm({
+            amount: '',
+            category: 'Rent',
+            description: '',
+            date: new Date().toISOString().slice(0, 10)
+        })
+        setIsModalOpen(true)
+    }
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault()
+
         try {
-            const res = await fetch('/api/expenses', {
-                method: 'POST',
+            let url = '/api/expenses'
+            let method = 'POST'
+            let body: any = { ...form, amount: Number(form.amount) }
+
+            if (editingItem) {
+                method = 'PUT'
+                url = editingItem.type === 'income' ? '/api/payments' : '/api/expenses'
+                const cleanId = editingItem.id.replace(/^[pe]-/, '')
+                body.id = Number(cleanId)
+            } else {
+                // Creating new expense
+                // Note: Current UI only supports adding "Expense". Income usually comes from Payments.
+                // If user wants to add generic Income, we don't have UI for it yet unless we add a Type selector.
+                // Assuming "Add Expense" is the main manual action.
+                url = '/api/expenses'
+            }
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
+                body: JSON.stringify(body)
             })
+
             if (res.ok) {
-                alert('Расход добавлен')
+                alert(editingItem ? 'Обновлено' : 'Расход добавлен')
                 setIsModalOpen(false)
-                setForm({ ...form, amount: '', description: '' })
                 fetchData() // Refresh stats
+            } else {
+                alert('Ошибка сохранения')
             }
         } catch (error) {
             alert('Ошибка')
@@ -103,7 +165,7 @@ export default function FinancePage() {
                         <Button
                             variant="primary"
                             leftIcon={<Plus size={20} />}
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={openCreateModal}
                         >
                             Добавить расход
                         </Button>
@@ -168,14 +230,15 @@ export default function FinancePage() {
                                 <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Категория</th>
                                 <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Описание</th>
                                 <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Сумма</th>
+                                <th className="p-4 text-sm font-medium text-[var(--text-muted)] text-right">Действия</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--border)]">
                             {transactions.length === 0 ? (
-                                <tr><td colSpan={5} className="p-8 text-center text-[var(--text-muted)]">Операций нет</td></tr>
+                                <tr><td colSpan={6} className="p-8 text-center text-[var(--text-muted)]">Операций нет</td></tr>
                             ) : (
                                 transactions.map(t => (
-                                    <tr key={t.id} className="hover:bg-[var(--surface-hover)]">
+                                    <tr key={t.id} className="hover:bg-[var(--surface-hover)] group">
                                         <td className="p-4 text-sm text-[var(--text)]">
                                             {new Date(t.date).toLocaleDateString('ru-RU')}
                                         </td>
@@ -192,6 +255,10 @@ export default function FinancePage() {
                                         <td className={clsx("p-4 text-sm font-bold", t.type === 'income' ? "text-green-600" : "text-red-600")}>
                                             {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString()} ₸
                                         </td>
+                                        <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="sm" onClick={() => openEditModal(t)}>✎</Button>
+                                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleDelete(t.id, t.type)}>✕</Button>
+                                        </td>
                                     </tr>
                                 ))
                             )}
@@ -205,7 +272,9 @@ export default function FinancePage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <div className="bg-[var(--surface)] w-full max-w-md rounded-xl shadow-2xl border border-[var(--border)]">
                         <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-[var(--text)]">Добавить расход</h2>
+                            <h2 className="text-xl font-bold text-[var(--text)]">
+                                {editingItem ? 'Редактировать запись' : 'Добавить расход'}
+                            </h2>
                             <button onClick={() => setIsModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
                         </div>
                         <form onSubmit={handleSave} className="p-6 space-y-4">
@@ -224,6 +293,13 @@ export default function FinancePage() {
                                     <option value="Office">Офис</option>
                                     <option value="Utilities">Коммунальные</option>
                                     <option value="Other">Прочее</option>
+                                    {/* Add Income categories if editing income? */}
+                                    {editingItem?.type === 'income' && (
+                                        <>
+                                            <option value="Tuition">Оплата за обучение</option>
+                                            <option value="Books">Книги</option>
+                                        </>
+                                    )}
                                 </select>
                             </div>
                             <div>
@@ -236,7 +312,9 @@ export default function FinancePage() {
                                 <input type="text" className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
                                     value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
                             </div>
-                            <Button type="submit" variant="primary" className="w-full">Сохранить</Button>
+                            <Button type="submit" variant="primary" className="w-full">
+                                {editingItem ? 'Сохранить изменения' : 'Сохранить'}
+                            </Button>
                         </form>
                     </div>
                 </div>

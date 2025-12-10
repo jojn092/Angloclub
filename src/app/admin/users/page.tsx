@@ -11,19 +11,22 @@ interface User {
     name: string
     email: string
     role: string
+    hourlyRate: number
 }
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [editingUser, setEditingUser] = useState<User | null>(null)
 
     // Form State
     const [form, setForm] = useState({
         name: '',
         email: '',
         password: '',
-        role: 'TEACHER'
+        role: 'TEACHER',
+        hourlyRate: 0
     })
 
     useEffect(() => {
@@ -42,21 +45,44 @@ export default function UsersPage() {
         }
     }
 
+    const openCreateModal = () => {
+        setEditingUser(null)
+        setForm({ name: '', email: '', password: '', role: 'TEACHER', hourlyRate: 0 })
+        setIsModalOpen(true)
+    }
+
+    const openEditModal = (user: User) => {
+        setEditingUser(user)
+        setForm({
+            name: user.name,
+            email: user.email,
+            password: '', // Leave empty to keep unchanged
+            role: user.role,
+            hourlyRate: user.hourlyRate
+        })
+        setIsModalOpen(true)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
+            const method = editingUser ? 'PUT' : 'POST'
+            const body = editingUser
+                ? { ...form, id: editingUser.id, password: form.password || undefined } // only send password if changed
+                : form
+
             const res = await fetch('/api/admin/users', {
-                method: 'POST',
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
+                body: JSON.stringify(body)
             })
+
             if (res.ok) {
-                alert('Пользователь создан ✅')
+                alert(editingUser ? 'Пользователь обновлен ✅' : 'Пользователь создан ✅')
                 setIsModalOpen(false)
-                setForm({ name: '', email: '', password: '', role: 'TEACHER' })
                 fetchUsers()
             } else {
-                alert('Ошибка при создании')
+                alert('Ошибка')
             }
         } catch (error) {
             alert('Ошибка сети')
@@ -78,7 +104,7 @@ export default function UsersPage() {
                     <Button
                         variant="primary"
                         leftIcon={<Plus size={20} />}
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={openCreateModal}
                     >
                         Добавить пользователя
                     </Button>
@@ -99,12 +125,14 @@ export default function UsersPage() {
                                     </span>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => handleDelete(user.id)}
-                                className="absolute top-4 right-4 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <Trash size={18} />
-                            </button>
+                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => openEditModal(user)} className="text-gray-400 hover:text-[var(--primary)]">
+                                    ✎
+                                </button>
+                                <button onClick={() => handleDelete(user.id)} className="text-red-400 hover:text-red-600">
+                                    <Trash size={18} />
+                                </button>
+                            </div>
                         </Card>
                     ))}
                 </div>
@@ -115,7 +143,9 @@ export default function UsersPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <div className="bg-[var(--surface)] w-full max-w-md rounded-xl shadow-2xl border border-[var(--border)]">
                         <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-[var(--text)]">Новый пользователь</h2>
+                            <h2 className="text-xl font-bold text-[var(--text)]">
+                                {editingUser ? 'Редактировать пользователя' : 'Новый пользователь'}
+                            </h2>
                             <button onClick={() => setIsModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -130,9 +160,24 @@ export default function UsersPage() {
                                     value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Пароль</label>
-                                <input type="text" required className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                    value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Почасовая ставка (тг/60мин)</label>
+                                <input
+                                    type="number"
+                                    className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
+                                    value={form.hourlyRate || ''}
+                                    onChange={e => setForm({ ...form, hourlyRate: Number(e.target.value) })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Пароль {editingUser && '(оставьте пустым чтобы не менять)'}</label>
+                                <input
+                                    type="password"
+                                    className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
+                                    value={form.password}
+                                    onChange={e => setForm({ ...form, password: e.target.value })}
+                                    required={!editingUser}
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Роль</label>
@@ -143,7 +188,9 @@ export default function UsersPage() {
                                     <option value="MANAGER">Менеджер (Manager)</option>
                                 </select>
                             </div>
-                            <Button type="submit" variant="primary" className="w-full">Создать</Button>
+                            <Button type="submit" variant="primary" className="w-full">
+                                {editingUser ? 'Сохранить изменения' : 'Создать'}
+                            </Button>
                         </form>
                     </div>
                 </div>

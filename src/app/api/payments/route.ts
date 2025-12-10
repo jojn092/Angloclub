@@ -70,3 +70,64 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Failed to record payment' }, { status: 500 })
     }
 }
+
+export async function DELETE(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url)
+        const id = searchParams.get('id')
+        if (!id) return NextResponse.json({ success: false, error: 'ID required' }, { status: 400 })
+
+        // Transaction: Delete Payment + Revert (Decrement) Student Balance
+        await prisma.$transaction(async (tx) => {
+            const payment = await tx.payment.findUnique({ where: { id: Number(id) } })
+            if (!payment) throw new Error('Payment not found')
+
+            await tx.student.update({
+                where: { id: payment.studentId },
+                data: { balance: { decrement: payment.amount } }
+            })
+
+            await tx.payment.delete({ where: { id: Number(id) } })
+        })
+
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        return NextResponse.json({ success: false, error: 'Failed' }, { status: 500 })
+    }
+}
+
+export async function PUT(request: Request) {
+    try {
+        const body = await request.json()
+        const { id, amount, ...otherData } = body
+        if (!id) return NextResponse.json({ success: false, error: 'ID required' }, { status: 400 })
+
+        const result = await prisma.$transaction(async (tx) => {
+            const oldPayment = await tx.payment.findUnique({ where: { id: Number(id) } })
+            if (!oldPayment) throw new Error('Payment not found')
+
+            // Calculate diff if amount changed
+            if (amount !== undefined && amount !== oldPayment.amount) {
+                const diff = amount - oldPayment.amount
+                await tx.student.update({
+                    where: { id: oldPayment.studentId },
+                    data: { balance: { increment: diff } }
+                })
+            }
+
+            const updatedPayment = await tx.payment.update({
+                where: { id: Number(id) },
+                data: {
+                    amount: amount !== undefined ? amount : undefined,
+                    ...otherData,
+                    date: otherData.date ? new Date(otherData.date) : undefined
+                }
+            })
+            return updatedPayment
+        })
+
+        return NextResponse.json({ success: true, data: result })
+    } catch (error) {
+        return NextResponse.json({ success: false, error: 'Failed' }, { status: 500 })
+    }
+}

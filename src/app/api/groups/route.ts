@@ -82,3 +82,37 @@ export async function POST(request: Request) {
         )
     }
 }
+// PUT: Update group (isActive, addStudent)
+export async function PUT(request: Request) {
+    try {
+        const body = await request.json()
+        const { id, isActive, addStudentId } = body
+
+        if (!id) {
+            return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 })
+        }
+
+        const group = await prisma.group.update({
+            where: { id },
+            data: {
+                isActive: isActive !== undefined ? isActive : undefined,
+                students: addStudentId ? {
+                    connect: { id: addStudentId }
+                } : undefined
+            },
+            include: {
+                course: true,
+                teacher: true,
+                _count: { select: { students: true } }
+            }
+        })
+
+        return NextResponse.json({ success: true, data: group })
+    } catch (error) {
+        console.error('Update group error:', error)
+        return NextResponse.json(
+            { success: false, error: 'Ошибка при обновлении группы' },
+            { status: 500 }
+        )
+    }
+}

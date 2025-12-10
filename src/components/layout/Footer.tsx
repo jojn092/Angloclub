@@ -29,7 +29,7 @@ export default function Footer({ translations = {} }: FooterProps) {
     ]
 
     return (
-        <footer className="bg-[var(--surface)] border-t border-[var(--border)]">
+        <footer className="bg-[var(--surface)] border-t border-[var(--border)]" id="contacts">
             <div className="container mx-auto px-4 py-12 lg:py-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
                     {/* Company Info */}

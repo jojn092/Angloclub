@@ -51,3 +51,34 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         return NextResponse.json({ success: false, error: 'Error fetching student' }, { status: 500 })
     }
 }
+
+// PUT: Update student (balance, status, leftReason)
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const { id: idStr } = await params
+        const id = Number(idStr)
+        const body = await request.json()
+        const { balance, status, leftReason, lessons } = body
+
+        if (isNaN(id)) return NextResponse.json({ success: false, error: 'Invalid ID' }, { status: 400 })
+
+        const updateData: any = {}
+        if (balance !== undefined) updateData.balance = balance
+        if (status) updateData.status = status
+        if (leftReason !== undefined) updateData.leftReason = leftReason
+        if (lessons !== undefined) updateData.lessons = lessons
+
+        const student = await prisma.student.update({
+            where: { id },
+            data: updateData
+        })
+
+        return NextResponse.json({ success: true, data: student })
+    } catch (error) {
+        console.error('Update student error:', error)
+        return NextResponse.json(
+            { success: false, error: 'Ошибка при обновлении студента' },
+            { status: 500 }
+        )
+    }
+}

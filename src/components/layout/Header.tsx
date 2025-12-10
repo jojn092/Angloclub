@@ -8,11 +8,11 @@ import Button from '../ui/Button'
 
 const navItems = [
     { href: '/', label: 'nav.home' },
-    { href: '/about', label: 'nav.about' },
-    { href: '/courses', label: 'nav.courses' },
-    { href: '/schedule', label: 'nav.schedule' },
-    { href: '/teachers', label: 'nav.teachers' },
-    { href: '/contacts', label: 'nav.contacts' },
+    { href: '#about', label: 'nav.about' },
+    { href: '#courses', label: 'nav.courses' },
+    //{ href: '#schedule', label: 'nav.schedule' }, // Temporary disabled or add section
+    { href: '#teachers', label: 'nav.teachers' },
+    { href: '#contacts', label: 'nav.contacts' },
 ]
 
 const languages = [

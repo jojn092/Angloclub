@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     }
 }
 
-// POST: Mark Attendance (Find/Create Lesson -> Update Attendance)
+// POST: Mark Attendance
 export async function POST(request: Request) {
     try {
         const body = await request.json()
@@ -75,42 +75,75 @@ export async function POST(request: Request) {
         }
 
         const { groupId, date, records } = validation.data
-        const lessonDate = new Date(date) // "YYYY-MM-DD" usually implies start of day universal or local? 
-        // We should treat it carefully. Let's assume input is YYYY-MM-DD.
-        // We want to create one Lesson per day per group for now (MVP).
+        const lessonDate = new Date(date)
 
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Find or Create Lesson for this Group + Date
-            // Define range for "Same Day"
+            // 1. Find or Create Lesson
             const start = new Date(lessonDate)
             start.setHours(0, 0, 0, 0)
             const end = new Date(lessonDate)
             end.setHours(23, 59, 59, 999)
 
             let lesson = await tx.lesson.findFirst({
-                where: {
-                    groupId,
-                    date: { gte: start, lte: end }
-                }
+                where: { groupId, date: { gte: start, lte: end } }
             })
+
+            // Get standard duration (future improvement: fetch from Template)
+            const standardDuration = 60
 
             if (!lesson) {
                 lesson = await tx.lesson.create({
                     data: {
                         groupId,
                         date: lessonDate,
-                        topic: 'Lesson ' + lessonDate.toLocaleDateString()
+                        topic: 'Lesson ' + lessonDate.toLocaleDateString(),
+                        duration: standardDuration
                     }
                 })
             }
 
-            // 2. Delete existing attendance for this lesson (to handle updates/removals)
-            // We assume the submitted list is the FULL state for the lesson.
-            await tx.attendance.deleteMany({
+            // 2. Fetch OLD attendance to calculate diff
+            const oldAttendance = await tx.attendance.findMany({
                 where: { lessonId: lesson.id }
             })
+            const oldStatusMap = new Map(oldAttendance.map(a => [a.studentId, a.status]))
 
-            // 3. Create new attendance records
+            // 3. Process each submitted record
+            for (const record of records) {
+                const { studentId, status } = record
+                const oldStatus = oldStatusMap.get(studentId)
+
+                // Define which statuses consume a lesson
+                const isConsuming = (s: string) => ['PRESENT', 'LATE'].includes(s)
+
+                let lessonChange = 0
+
+                // If new status consumes lesson, and old didn't (or didn't exist)
+                if (isConsuming(status) && (!oldStatus || !isConsuming(oldStatus))) {
+                    lessonChange = -1
+                }
+                // If new status DOES NOT consume, but old DID
+                else if (!isConsuming(status) && oldStatus && isConsuming(oldStatus)) {
+                    lessonChange = 1
+                }
+
+                // Update Student Lessons if changed
+                if (lessonChange !== 0) {
+                    await tx.student.update({
+                        where: { id: studentId },
+                        data: { lessons: { increment: lessonChange } }
+                    })
+                }
+            }
+
+            // 4. Update Attendance Records (Delete all and recreate is simpler but strictly we should upsert)
+            // But strict Recreate is acceptable for this scale if we handle IDs.
+            // Actually, map logic handled logic. Now let's save the state.
+
+            // Delete old
+            await tx.attendance.deleteMany({ where: { lessonId: lesson.id } })
+
+            // Create new
             if (records.length > 0) {
                 await tx.attendance.createMany({
                     data: records.map(r => ({
@@ -127,6 +160,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, data: result })
     } catch (error) {
         console.error('Attendance Save Error:', error)
-        return NextResponse.json({ success: false, error: 'Failed to mark attendance' }, { status: 500 })
+        return NextResponse.json({ success: false, error: 'Failed' }, { status: 500 })
     }
 }

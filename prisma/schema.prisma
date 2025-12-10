@@ -17,6 +17,7 @@ model User {
   role      String   @default("TEACHER") // ADMIN, MANAGER, TEACHER
   phone     String?
   isActive  Boolean  @default(true)
+  hourlyRate Int     @default(0) // Salary per 60 minutes
   
   // Relations
   groups    Group[]  @relation("TeacherGroups")
@@ -26,6 +27,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 
 model Lead {
   id        Int       @id @default(autoincrement())
@@ -97,6 +99,7 @@ model Student {
   phone     String
   email     String?
   balance   Int      @default(0)
+  lessons   Int      @default(0) // Remaining lessons
   
   leadId    Int?     @unique
   lead      Lead?    @relation(fields: [leadId], references: [id])
@@ -106,21 +109,18 @@ model Student {
   payments  Payment[]
 
   createdAt DateTime @default(now())
+
+  status    String   @default("active") // active, left, graduated
+  leftReason String?
 }
 
-model ScheduleTemplate {
-  id        Int      @id @default(autoincrement())
-  dayOfWeek Int      // 0=Sun, 1=Mon...
-  startTime String   // "10:00"
-  duration  Int      // minutes
-  groupId   Int
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-}
+// ... (ScheduleTemplate)
 
 model Lesson {
   id        Int      @id @default(autoincrement())
   date      DateTime
   topic     String?
+  duration  Int      @default(60) // Duration in minutes
   groupId   Int
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   

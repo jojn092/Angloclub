@@ -11,21 +11,21 @@ export default function Footer({ translations = {} }: FooterProps) {
     const t = translations as Record<string, Record<string, string>>
 
     const quickLinks = [
-        { href: '/about', label: t.nav?.about || 'О школе' },
-        { href: '/courses', label: t.nav?.courses || 'Курсы' },
-        { href: '/schedule', label: t.nav?.schedule || 'Расписание' },
-        { href: '/teachers', label: t.nav?.teachers || 'Преподаватели' },
-        { href: '/faq', label: t.nav?.faq || 'FAQ' },
-        { href: '/contacts', label: t.nav?.contacts || 'Контакты' },
+        { href: '#about', label: t.nav?.about || 'О школе' },
+        { href: '#courses', label: t.nav?.courses || 'Курсы' },
+        { href: '#schedule', label: t.nav?.schedule || 'Расписание' },
+        { href: '#teachers', label: t.nav?.teachers || 'Преподаватели' },
+        { href: '#faq', label: t.nav?.faq || 'FAQ' },
+        { href: '#contacts', label: t.nav?.contacts || 'Контакты' },
     ]
 
     const courseLinks = [
-        { href: '/courses/kids', label: 'Для детей' },
-        { href: '/courses/teens', label: 'Для подростков' },
-        { href: '/courses/adults', label: 'Для взрослых' },
-        { href: '/courses/ielts', label: 'IELTS/TOEFL' },
-        { href: '/courses/speaking', label: 'Разговорный клуб' },
-        { href: '/corporate', label: t.nav?.corporate || 'Для компаний' },
+        { href: '#courses', label: 'Для детей' },
+        { href: '#courses', label: 'Для подростков' },
+        { href: '#courses', label: 'Для взрослых' },
+        { href: '#courses', label: 'IELTS/TOEFL' },
+        { href: '#courses', label: 'Разговорный клуб' },
+        { href: '#corporate', label: t.nav?.corporate || 'Для компаний' },
     ]
 
     return (
@@ -102,8 +102,8 @@ export default function Footer({ translations = {} }: FooterProps) {
                             {t.nav?.courses || 'Курсы'}
                         </h4>
                         <ul className="space-y-2">
-                            {courseLinks.map((link) => (
-                                <li key={link.href}>
+                            {courseLinks.map((link, index) => (
+                                <li key={index}>
                                     <Link
                                         href={link.href}
                                         className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"

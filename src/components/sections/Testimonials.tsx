@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Star, Quote, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import Card from '../ui/Card'
 
@@ -9,7 +9,17 @@ interface TestimonialsProps {
     translations: Record<string, unknown>
 }
 
-const testimonials = [
+interface Testimonial {
+    id: string
+    name: string
+    photo?: string
+    course: string
+    rating: number
+    text: string
+    certificate?: string
+}
+
+const testimonials: Testimonial[] = [
     {
         id: '1',
         name: 'Айгерим Сейтова',
@@ -25,6 +35,14 @@ const testimonials = [
         course: 'Business English',
         rating: 5,
         text: 'Курс бизнес-английского помог мне получить повышение на работе. Теперь уверенно провожу переговоры с иностранными партнерами.',
+    },
+    {
+        id: 'new-1',
+        name: 'Сабина',
+        course: 'IELTS Preparation',
+        rating: 5,
+        text: 'Хотела бы поделится своим опытом подготовки к IELTS. Начала подготовку за 2 месяца до сдачи экзамена, ходила 3 часа каждую неделю к преподавателю Сагынай. Уроки проходили интересно, за весь период я заметно повысила свой разговорный английский. Сам экзамен у меня был 08.11, по результатам которых я получила общий балл 7.5 🥳🥳🥳. Безмерно благодарна, спасибо вам!! Всем советую прекрасного преподавателя Сагынай👍',
+        certificate: '/images/testimonials/sabina_ielts.png'
     },
     {
         id: '3',
@@ -47,6 +65,7 @@ const testimonials = [
 export default function Testimonials({ translations }: TestimonialsProps) {
     const t = (translations.testimonials || {}) as Record<string, string>
     const [currentIndex, setCurrentIndex] = useState(0)
+    const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
     const next = () => {
         setCurrentIndex((prev) => (prev + 1) % testimonials.length)
@@ -55,6 +74,8 @@ export default function Testimonials({ translations }: TestimonialsProps) {
     const prev = () => {
         setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
     }
+
+    const current = testimonials[currentIndex]
 
     return (
         <section className="section bg-[var(--surface)]">
@@ -71,7 +92,7 @@ export default function Testimonials({ translations }: TestimonialsProps) {
                 </div>
 
                 {/* Slider Container */}
-                <div className="relative max-w-4xl mx-auto">
+                <div className="relative max-w-5xl mx-auto">
                     {/* Navigation Buttons */}
                     <button
                         onClick={prev}
@@ -88,30 +109,48 @@ export default function Testimonials({ translations }: TestimonialsProps) {
                     </button>
 
                     {/* Testimonial Card */}
-                    <Card className="relative overflow-hidden">
+                    <Card className="relative overflow-hidden p-0">
                         {/* Quote Icon */}
                         <Quote className="absolute top-6 right-6 w-16 h-16 text-[var(--primary)]/10" />
 
-                        <div className="flex flex-col md:flex-row items-center gap-6 p-2">
-                            {/* Avatar */}
-                            <div className="shrink-0">
+                        <div className={clsx("flex flex-col md:flex-row gap-6 p-8", current.certificate ? "items-start" : "items-center")}>
+                            {/* Avatar or Certificate Preview */}
+                            <div className="shrink-0 flex flex-col items-center gap-4">
                                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-primary to-secondary p-1">
-                                    <div className="w-full h-full rounded-full bg-[var(--surface)] flex items-center justify-center text-3xl font-bold text-[var(--primary)]">
-                                        {testimonials[currentIndex].name.charAt(0)}
+                                    <div className="w-full h-full rounded-full bg-[var(--surface)] flex items-center justify-center overflow-hidden">
+                                        {current.photo ? (
+                                            <img src={current.photo} alt={current.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-3xl font-bold text-[var(--primary)]">
+                                                {current.name.charAt(0)}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
+                                {current.certificate && (
+                                    <div className="hidden md:block w-48 relative group cursor-pointer" onClick={() => setSelectedImage(current.certificate!)}>
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
+                                            <span className="text-white text-xs font-bold">Увеличить</span>
+                                        </div>
+                                        <img
+                                            src={current.certificate}
+                                            alt="Certificate"
+                                            className="w-full rounded-lg shadow-md border border-[var(--border)]"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {/* Content */}
-                            <div className="flex-1 text-center md:text-left">
+                            <div className="flex-1 text-center md:text-left space-y-4">
                                 {/* Rating */}
-                                <div className="flex items-center justify-center md:justify-start gap-1 mb-3">
+                                <div className="flex items-center justify-center md:justify-start gap-1">
                                     {[...Array(5)].map((_, i) => (
                                         <Star
                                             key={i}
                                             size={18}
                                             className={clsx(
-                                                i < testimonials[currentIndex].rating
+                                                i < current.rating
                                                     ? 'text-yellow-400 fill-yellow-400'
                                                     : 'text-gray-300'
                                             )}
@@ -120,19 +159,33 @@ export default function Testimonials({ translations }: TestimonialsProps) {
                                 </div>
 
                                 {/* Text */}
-                                <p className="text-[var(--text)] text-lg leading-relaxed mb-4">
-                                    &ldquo;{testimonials[currentIndex].text}&rdquo;
+                                <p className="text-[var(--text)] text-lg leading-relaxed italic">
+                                    &ldquo;{current.text}&rdquo;
                                 </p>
 
                                 {/* Author */}
                                 <div>
-                                    <h4 className="font-semibold text-[var(--text)]">
-                                        {testimonials[currentIndex].name}
+                                    <h4 className="font-semibold text-[var(--text)] text-xl">
+                                        {current.name}
                                     </h4>
                                     <p className="text-sm text-[var(--text-muted)]">
-                                        {testimonials[currentIndex].course}
+                                        {current.course}
                                     </p>
                                 </div>
+
+                                {/* Mobile Certificate */}
+                                {current.certificate && (
+                                    <div className="md:hidden mt-4 cursor-pointer" onClick={() => setSelectedImage(current.certificate!)}>
+                                        <p className="text-sm text-[var(--text-muted)] mb-2">Нажмите для просмотра сертификата:</p>
+                                        <div className="relative">
+                                            <img
+                                                src={current.certificate}
+                                                alt="Certificate"
+                                                className="w-full max-w-[200px] mx-auto rounded-lg shadow-md border border-[var(--border)]"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </Card>
@@ -154,6 +207,27 @@ export default function Testimonials({ translations }: TestimonialsProps) {
                     </div>
                 </div>
             </div>
+
+            {/* Lightbox Modal */}
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 transition-opacity duration-300"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <button
+                        className="absolute top-4 right-4 p-2 text-white/70 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <X size={32} />
+                    </button>
+                    <img
+                        src={selectedImage}
+                        alt="Full size certificate"
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking image
+                    />
+                </div>
+            )}
         </section>
     )
 }

@@ -100,6 +100,7 @@ export default function Home() {
         translations={translations as Record<string, string>}
         locale={locale}
         onLocaleChange={handleLocaleChange}
+        onEnrollClick={scrollToForm}
       />
 
       <Hero
@@ -117,7 +118,10 @@ export default function Home() {
         onEnroll={handleEnrollCourse}
       />
 
-      <Teachers translations={translations} />
+      <Teachers
+        translations={translations}
+        onEnroll={scrollToForm}
+      />
 
       <Testimonials translations={translations} />
 

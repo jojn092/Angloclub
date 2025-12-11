@@ -62,7 +62,7 @@ export default function Features({ translations }: FeaturesProps) {
                             </div>
 
                             {/* Title */}
-                            <h3 className="text-lg font-semibold text-[var(--text)] mb-3">
+                            <h3 className="text-base md:text-lg font-semibold text-[var(--text)] mb-3 leading-tight">
                                 {feature.title}
                             </h3>
 

@@ -25,9 +25,10 @@ interface HeaderProps {
     translations?: Record<string, string>
     locale?: string
     onLocaleChange?: (locale: string) => void
+    onEnrollClick?: () => void
 }
 
-export default function Header({ translations = {}, locale = 'ru', onLocaleChange = () => { } }: HeaderProps) {
+export default function Header({ translations = {}, locale = 'ru', onLocaleChange = () => { }, onEnrollClick }: HeaderProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isScrolled, setIsScrolled] = useState(false)
     const [isDark, setIsDark] = useState(false)
@@ -158,9 +159,10 @@ export default function Header({ translations = {}, locale = 'ru', onLocaleChang
 
                         {/* CTA Button */}
                         <Button
-                            variant="accent"
+                            variant="primary"
                             size="sm"
                             className="hidden sm:flex"
+                            onClick={onEnrollClick}
                         >
                             {getTranslation('hero.cta')}
                         </Button>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Analytics from "@/components/analytics/Analytics";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -64,6 +65,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Analytics />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -86,7 +88,7 @@ export default function RootLayout({
                 "contactType": "customer service"
               },
               "sameAs": [
-                "https://www.instagram.com/angloclub.kz"
+                "https://www.instagram.com/angloclub.ast"
               ]
             })
           }}

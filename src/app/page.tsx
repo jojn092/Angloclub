@@ -10,6 +10,7 @@ import Stats from '@/components/sections/Stats'
 import Testimonials from '@/components/sections/Testimonials'
 import CourseCards from '@/components/sections/CourseCards'
 import Teachers from '@/components/sections/Teachers'
+import Contacts from '@/components/sections/Contacts'
 import LeadForm from '@/components/sections/LeadForm'
 
 export default function Home() {
@@ -117,6 +118,8 @@ export default function Home() {
         translations={translations}
         onEnroll={handleEnrollCourse}
       />
+
+      <Contacts translations={translations} />
 
       <Testimonials translations={translations} />
 

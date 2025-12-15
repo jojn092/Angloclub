@@ -70,6 +70,16 @@
             "title": "IELTS",
             "description": "Preparation for international exams"
         },
+        "online": {
+            "title": "Online Learning",
+            "ages": "All levels",
+            "description": "Classes from anywhere in the world, interactive platform"
+        },
+        "individual": {
+            "title": "One-on-One",
+            "ages": "Any age",
+            "description": "Personalized program, flexible schedule, 1-on-1"
+        },
         "speaking": {
             "title": "Speaking Club",
             "description": "Practice with native speakers"

@@ -12,6 +12,7 @@ const navItems = [
     { href: '#courses', label: 'nav.courses' },
     //{ href: '#schedule', label: 'nav.schedule' }, // Temporary disabled or add section
     { href: '#teachers', label: 'nav.teachers' },
+    { href: '/blog', label: 'nav.blog' },
     { href: '#contacts', label: 'nav.contacts' },
 ]
 

@@ -64,6 +64,33 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "EducationalOrganization",
+              "name": "AngloClub Astana",
+              "url": "https://angloclub.kz",
+              "logo": "https://angloclub.kz/og-image.png",
+              "description": "Языковая школа в Астане. Курсы английского языка для детей и взрослых.",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "ул. Бухар Жырау 34/2",
+                "addressLocality": "Astana",
+                "addressCountry": "KZ"
+              },
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "telephone": "+7-702-029-6315",
+                "contactType": "customer service"
+              },
+              "sameAs": [
+                "https://www.instagram.com/angloclub.kz"
+              ]
+            })
+          }}
+        />
       </body>
     </html>
   );

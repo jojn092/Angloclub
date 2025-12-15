@@ -85,7 +85,7 @@ export default function Contacts({ translations }: ContactsProps) {
                         {/* 2GIS Widget */}
                         <iframe
                             className="absolute inset-0 w-full h-full border-0"
-                            src="https://widgets.2gis.com/widget?type=firmsonmap&firms=70000001079190548"
+                            src="/map.html"
                             title="AngloClub Location"
                             loading="lazy"
                         />

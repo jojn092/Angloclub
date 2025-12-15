@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://angloclub.kz"),
   title: "AngloClub Astana — Курсы английского языка",
   description: "Языковая школа в Астане. IELTS, разговорный английский, курсы для детей и взрослых. Запишитесь на пробный урок!",
   keywords: ["английский язык", "Астана", "курсы", "IELTS", "языковая школа", "English courses"],
@@ -24,17 +25,18 @@ export const metadata: Metadata = {
     siteName: "AngloClub Astana",
     locale: "ru_KZ",
     type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "AngloClub Astana Logo" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "AngloClub Astana — Курсы английского языка",
     description: "Языковая школа в Астане. Запишитесь на пробный урок!",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
     follow: true,
   },
-
 };
 
 export const viewport: Viewport = {

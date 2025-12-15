@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AngloClub Astana — Курсы английского языка",
-  description: "Языковая школа в Астане. IELTS, разговорный английский, курсы для детей и взрослых. Запишитесь на бесплатный пробный урок!",
+  description: "Языковая школа в Астане. IELTS, разговорный английский, курсы для детей и взрослых. Запишитесь на пробный урок!",
   keywords: ["английский язык", "Астана", "курсы", "IELTS", "языковая школа", "English courses"],
   authors: [{ name: "AngloClub Astana" }],
   openGraph: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "AngloClub Astana — Курсы английского языка",
-    description: "Языковая школа в Астане. Запишитесь на бесплатный пробный урок!",
+    description: "Языковая школа в Астане. Запишитесь на пробный урок!",
   },
   robots: {
     index: true,

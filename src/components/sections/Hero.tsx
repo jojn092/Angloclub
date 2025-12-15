@@ -44,7 +44,7 @@ export default function Hero({ translations, onEnrollClick, onTestClick }: HeroP
 
                     {/* Subtitle */}
                     <p className="text-xl sm:text-2xl text-white/90 mb-4 font-medium">
-                        {t.subtitle || 'Запишитесь на бесплатный пробный урок'}
+                        {t.subtitle || 'Запишитесь на пробный урок (1500₸)'}
                     </p>
 
                     {/* Description */}

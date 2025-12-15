@@ -16,6 +16,7 @@ export default function Home() {
   const [translations, setTranslations] = useState<Record<string, unknown>>({})
   const [locale, setLocale] = useState('ru')
   const [isLoaded, setIsLoaded] = useState(false)
+  const [formInitialData, setFormInitialData] = useState<{ course?: string; message?: string } | null>(null)
 
   // Load translations
   useEffect(() => {
@@ -69,17 +70,11 @@ export default function Home() {
     window.location.href = '/test'
   }
 
-  const handleEnrollCourse = (course: string) => {
+  const handleEnrollCourse = (course: string, message?: string) => {
+    setFormInitialData({ course, message })
     const form = document.getElementById('lead-form')
     if (form) {
       form.scrollIntoView({ behavior: 'smooth' })
-      // Pre-fill course in form if possible
-      setTimeout(() => {
-        const courseSelect = form.querySelector('select[name="course"]') as HTMLSelectElement
-        if (courseSelect) {
-          courseSelect.value = course
-        }
-      }, 500)
     }
   }
 
@@ -120,12 +115,15 @@ export default function Home() {
 
       <Teachers
         translations={translations}
-        onEnroll={scrollToForm}
+        onEnroll={handleEnrollCourse}
       />
 
       <Testimonials translations={translations} />
 
-      <LeadForm translations={translations} />
+      <LeadForm
+        translations={translations}
+        initialData={formInitialData}
+      />
 
       <Footer translations={translations} />
 

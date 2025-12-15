@@ -5,7 +5,7 @@ import Button from '../ui/Button'
 
 interface CourseCardsProps {
     translations: Record<string, unknown>
-    onEnroll: (course: string) => void
+    onEnroll: (course: string, message?: string) => void
 }
 
 const courses = [
@@ -59,7 +59,9 @@ export default function CourseCards({ translations, onEnroll }: CourseCardsProps
 
     const handleEnroll = (courseId: string) => {
         const title = getCourseText(courseId, 'title')
-        onEnroll(title || courseId)
+        const courseName = title || courseId
+        const message = `Здравствуйте, меня интересует курс ${courseName}. Можно подробности насчет этого курса?`
+        onEnroll(courseName, message)
         setSelectedCourse(null)
     }
 
@@ -157,8 +159,8 @@ export default function CourseCards({ translations, onEnroll }: CourseCardsProps
                                 🎁 Специальные пакеты со скидкой
                             </h3>
                             <p className="text-[var(--text-muted)]">
-                                Курс + Разговорный клуб = <span className="text-[var(--accent)] font-semibold">-20%</span>{' '}
-                                | Семейный пакет (2 ребенка) = <span className="text-[var(--accent)] font-semibold">-15%</span>
+                                Семейный пакет (2 ребенка) — одному <span className="text-[var(--accent)] font-semibold">-10%</span>{' '}
+                                | При оплате за 3 месяца — скидка на 3-й месяц <span className="text-[var(--accent)] font-semibold">-15%</span>
                             </p>
                         </div>
                         <Button variant="accent" size="lg" onClick={() => onEnroll('Special Offer')}>

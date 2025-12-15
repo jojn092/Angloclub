@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Send, MessageCircle, User, Phone, BookOpen, MessageSquareText } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
@@ -9,6 +9,7 @@ import Card from '../ui/Card'
 interface LeadFormProps {
     translations: Record<string, unknown>
     onSubmit?: (data: FormData) => void
+    initialData?: { course?: string; message?: string } | null
 }
 
 interface FormData {
@@ -22,13 +23,13 @@ const courseOptions = [
     { value: 'kids', label: 'Английский для детей (4-7 лет)' },
     { value: 'teens', label: 'Для подростков (8-16 лет)' },
     { value: 'adults', label: 'Для взрослых (17+ лет)' },
-    { value: 'ielts', label: 'IELTS/TOEFL' },
+    { value: 'ielts', label: 'IELTS' },
     { value: 'speaking', label: 'Разговорный клуб' },
     { value: 'business', label: 'Бизнес-английский' },
     { value: 'intensive', label: 'Интенсивный курс' },
 ]
 
-export default function LeadForm({ translations, onSubmit }: LeadFormProps) {
+export default function LeadForm({ translations, onSubmit, initialData }: LeadFormProps) {
     const t = (translations.form || {}) as Record<string, string>
     const [formData, setFormData] = useState<FormData>({
         name: '',
@@ -38,6 +39,17 @@ export default function LeadForm({ translations, onSubmit }: LeadFormProps) {
     })
     const [isLoading, setIsLoading] = useState(false)
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
+    // Update form data when initialData changes
+    useEffect(() => {
+        if (initialData) {
+            setFormData(prev => ({
+                ...prev,
+                course: initialData.course || prev.course,
+                message: initialData.message || prev.message
+            }))
+        }
+    }, [initialData])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData((prev) => ({

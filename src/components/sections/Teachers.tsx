@@ -6,7 +6,7 @@ import Button from '../ui/Button'
 
 interface TeachersProps {
     translations: Record<string, unknown>
-    onEnroll?: () => void
+    onEnroll?: (teacher: string, message?: string) => void
 }
 
 interface Teacher {
@@ -137,7 +137,10 @@ export default function Teachers({ translations, onEnroll }: TeachersProps) {
                                 <Button
                                     variant="secondary"
                                     className="w-full"
-                                    onClick={onEnroll}
+                                    onClick={() => {
+                                        const message = `Мне понравилась методика преподавателя ${teacher.name}. Можно меня записать к ней на пробный урок?`
+                                        onEnroll?.(teacher.name, message)
+                                    }}
                                 >
                                     Записаться на пробный
                                 </Button>

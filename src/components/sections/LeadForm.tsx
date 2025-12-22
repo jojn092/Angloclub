@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Send, MessageCircle, User, Phone, BookOpen, MessageSquareText } from 'lucide-react'
+import { Send, MessageCircle, User, Phone, BookOpen, MessageSquareText, ShieldCheck } from 'lucide-react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
@@ -40,6 +40,25 @@ export default function LeadForm({ translations, onSubmit, initialData }: LeadFo
     const [isLoading, setIsLoading] = useState(false)
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
+    // Captcha State
+    const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, answer: 0 })
+    const [captchaInput, setCaptchaInput] = useState('')
+    const [captchaError, setCaptchaError] = useState(false)
+
+    // Generate random captcha
+    const generateCaptcha = () => {
+        const num1 = Math.floor(Math.random() * 10) + 1
+        const num2 = Math.floor(Math.random() * 10) + 1
+        setCaptcha({ num1, num2, answer: num1 + num2 })
+        setCaptchaInput('')
+        setCaptchaError(false)
+    }
+
+    // Initial generation
+    useEffect(() => {
+        generateCaptcha()
+    }, [])
+
     // Update form data when initialData changes
     useEffect(() => {
         if (initialData) {
@@ -60,6 +79,13 @@ export default function LeadForm({ translations, onSubmit, initialData }: LeadFo
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Captcha Validation
+        if (parseInt(captchaInput) !== captcha.answer) {
+            setCaptchaError(true)
+            return
+        }
+
         setIsLoading(true)
         setStatus('idle')
 
@@ -74,6 +100,7 @@ export default function LeadForm({ translations, onSubmit, initialData }: LeadFo
 
             setStatus('success')
             setFormData({ name: '', phone: '', course: '', message: '' })
+            generateCaptcha() // Reset captcha on success
             onSubmit?.(formData)
         } catch {
             setStatus('error')
@@ -165,6 +192,33 @@ export default function LeadForm({ translations, onSubmit, initialData }: LeadFo
                                 </div>
                             </div>
 
+                            {/* Custom Captcha */}
+                            <div className="bg-[var(--background)] p-4 rounded-lg border border-[var(--border)]">
+                                <label className="block text-sm font-medium text-[var(--text)] mb-2">
+                                    {t.captcha || 'Проверка на робота:'} <span className="text-[var(--primary)] font-bold">{captcha.num1} + {captcha.num2} = ?</span>
+                                </label>
+                                <div className="relative">
+                                    <ShieldCheck size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                    <input
+                                        type="number"
+                                        value={captchaInput}
+                                        onChange={(e) => {
+                                            setCaptchaInput(e.target.value)
+                                            setCaptchaError(false)
+                                        }}
+                                        placeholder="Введите ответ"
+                                        className={`w-full pl-10 pr-4 py-3 rounded-lg border bg-[var(--surface)] text-[var(--text)] focus:ring-2 transition-all ${captchaError
+                                                ? 'border-red-500 focus:ring-red-500'
+                                                : 'border-[var(--border)] focus:ring-[var(--primary)] focus:border-transparent'
+                                            }`}
+                                        required
+                                    />
+                                </div>
+                                {captchaError && (
+                                    <p className="text-red-500 text-xs mt-1">Неправильный ответ, попробуйте снова.</p>
+                                )}
+                            </div>
+
                             {/* Status Messages */}
                             {status === 'success' && (
                                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 text-green-600">
@@ -220,3 +274,4 @@ export default function LeadForm({ translations, onSubmit, initialData }: LeadFo
         </section>
     )
 }
+

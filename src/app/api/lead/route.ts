@@ -12,8 +12,9 @@ export async function POST(request: NextRequest) {
         const validation = leadSchema.safeParse(body)
 
         if (!validation.success) {
+            console.error('[Lead API] Validation failed:', validation.error.flatten())
             return NextResponse.json(
-                { success: false, error: 'Invalid input data' },
+                { success: false, error: 'Invalid input data', details: validation.error.flatten() },
                 { status: 400 }
             )
         }
@@ -46,26 +47,31 @@ export async function POST(request: NextRequest) {
             return newLead
         })
 
-        // Send Telegram notification
+
+        // Helper to escape HTML characters for Telegram
+        const escapeHtml = (str: string) => {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+        }
+
         // Send Telegram notification
         const telegramMessage = `
 <b>Новая заявка:</b>
-👤 Имя: ${lead.name}
-📱 Телефон: ${lead.phone}
-📚 Курс: ${lead.course}
-💬 Сообщение: ${lead.message || 'Нет'}
+👤 Имя: ${escapeHtml(lead.name)}
+📱 Телефон: ${escapeHtml(lead.phone)}
+📚 Курс: ${escapeHtml(lead.course)}
+💬 Сообщение: ${escapeHtml(lead.message || 'Нет')}
         `.trim()
 
-        // Send to Admin Chat (you need to define ADMIN_CHAT_ID in env or logic)
-        // For now, let's skip or hardcode if we know it, or just use the service if implemented correctly.
-        // Actually the old function handled formatting.
-
-        // Better approach: Re-implement sendTelegramNotification as a wrapper around TelegramService
-        // OR update this code to manually format.
-        // Since we don't have a single target chat ID (admin group), the previous implementation likely sent to a specific ENV var.
-
         if (process.env.TELEGRAM_ADMIN_CHAT_ID) {
-            TelegramService.sendMessage(process.env.TELEGRAM_ADMIN_CHAT_ID, telegramMessage).catch(console.error)
+            TelegramService.sendMessage(process.env.TELEGRAM_ADMIN_CHAT_ID, telegramMessage).catch((err) => {
+                console.error('[Lead API] Failed to send Telegram message:', err)
+            })
+        } else {
+            console.warn('[Lead API] TELEGRAM_ADMIN_CHAT_ID is not defined in .env. Notification skipped.')
         }
 
         console.log(`[Lead] Created lead #${lead.id}`)

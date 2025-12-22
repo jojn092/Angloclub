@@ -26,7 +26,8 @@ export default function Snowfall() {
                     style={{
                         left: `${flake.left}%`,
                         opacity: flake.opacity,
-                        animation: `fall ${flake.animationDuration}s linear infinite`
+                        animation: `fall ${flake.animationDuration}s linear infinite`,
+                        willChange: 'transform' // Performance optimization
                     }}
                 />
             ))}

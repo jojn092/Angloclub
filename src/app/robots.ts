@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
         rules: {
             userAgent: '*',
             allow: '/',
-            disallow: ['/admin/', '/_next/'],
+            disallow: ['/admin/', '/_next/', '/teacher/'],
         },
         sitemap: 'https://angloclub.kz/sitemap.xml',
     }

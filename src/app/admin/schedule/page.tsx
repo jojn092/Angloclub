@@ -1,57 +1,82 @@
 'use client'
 
-import { useState, useEffect, Fragment } from 'react'
+import { useState, useEffect } from 'react'
 import AdminHeader from '@/components/admin/AdminHeader'
-import Card from '@/components/ui/Card'
-import { ChevronLeft, ChevronRight, Clock, MapPin, Users } from 'lucide-react'
-import { clsx } from 'clsx'
+import { ChevronLeft, ChevronRight, Clock, MapPin, Users, Filter } from 'lucide-react'
 
+// Types
 interface Group {
     id: number
     name: string
-    teacher: { name: string }
-    room: { name: string } | null
+    teacher: { id: number, name: string }
+    room: { id: number, name: string } | null
     schedules: {
-        id: number
         dayOfWeek: number
         startTime: string
-        duration: number
+        endTime: string
     }[]
 }
 
-const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+interface Room { id: number, name: string }
+
+const DAYS = [
+    { value: 1, label: 'Понедельник' },
+    { value: 2, label: 'Вторник' },
+    { value: 3, label: 'Среда' },
+    { value: 4, label: 'Четверг' },
+    { value: 5, label: 'Пятница' },
+    { value: 6, label: 'Суббота' },
+    { value: 0, label: 'Воскресенье' }
+]
+
 const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => i + 8) // 08:00 to 21:00
 
 export default function SchedulePage() {
     const [groups, setGroups] = useState<Group[]>([])
+    const [rooms, setRooms] = useState<Room[]>([])
+    const [selectedDay, setSelectedDay] = useState(1) // Default Monday
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
-        fetchGroups()
+        Promise.all([
+            fetchGroups(),
+            fetchRooms()
+        ]).finally(() => setIsLoading(false))
     }, [])
 
     const fetchGroups = async () => {
-        try {
-            const res = await fetch('/api/groups') // Groups with schedules
-            const data = await res.json()
-            if (data.success) setGroups(data.data)
-        } catch (error) {
-            console.error(error)
-        } finally {
-            setIsLoading(false)
+        const res = await fetch('/api/groups')
+        const data = await res.json()
+        if (data.success) setGroups(data.data)
+    }
+
+    const fetchRooms = async () => {
+        const res = await fetch('/api/rooms')
+        const data = await res.json()
+        if (data.success) {
+            setRooms(data.data)
         }
     }
 
-    // Helper to check if a group has a class on a specific Day + Hour
-    const getClassesForSlot = (dayIndex: number, hour: number) => {
+    // Filter classes for specific Room + Time + Selected Day
+    const getClasses = (roomId: number | null, hour: number) => {
         return groups.flatMap(g =>
             g.schedules
                 .filter(s => {
-                    const startH = parseInt(s.startTime.split(':')[0])
-                    const dayMatch = s.dayOfWeek === dayIndex
-                    // Simple check: if start hour matches current slot
-                    // Ideally we should handle duration spanning multiple slots
-                    return dayMatch && startH === hour
+                    const sDay = s.dayOfWeek
+                    const sHour = parseInt(s.startTime.split(':')[0])
+
+                    // Match Day
+                    if (sDay !== selectedDay) return false
+
+                    // Match Time (Simple hour match)
+                    if (sHour !== hour) return false
+
+                    // Match Room
+                    if (roomId === null) {
+                        return g.room === null // 'No Room' column
+                    }
+                    return g.room?.id === roomId
                 })
                 .map(s => ({ ...g, schedule: s }))
         )
@@ -60,63 +85,88 @@ export default function SchedulePage() {
     return (
         <div className="min-h-screen bg-[var(--background)]">
             <AdminHeader onLogout={() => window.location.href = '/admin/login'} />
-            <main className="max-w-full mx-auto px-4 py-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-[var(--text)]">Расписание занятий</h1>
-                    <div className="flex gap-2">
-                        <button className="p-2 rounded hover:bg-[var(--surface-hover)] text-[var(--text)]"><ChevronLeft /></button>
-                        <span className="font-medium text-[var(--text)]">Эта неделя</span>
-                        <button className="p-2 rounded hover:bg-[var(--surface-hover)] text-[var(--text)]"><ChevronRight /></button>
-                    </div>
+            <main className="max-w-7xl mx-auto px-4 py-6">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h1 className="text-2xl font-bold text-[var(--text)]">Расписание по кабинетам</h1>
                 </div>
 
-                <div className="grid grid-cols-8 gap-px bg-[var(--border)] border border-[var(--border)] rounded-lg overflow-hidden shadow-sm">
-                    {/* Header Row */}
-                    <div className="bg-[var(--surface)] p-4 text-center font-bold text-[var(--text-muted)] border-b border-r border-[var(--border)]">
-                        Время
-                    </div>
-                    {DAYS.slice(1).map((day, i) => ( // Show Mon-Sat
-                        <div key={i} className="bg-[var(--surface)] p-4 text-center border-b border-[var(--border)]">
-                            <span className="block font-bold text-[var(--text)]">{day}</span>
-                            {/* <span className="text-xs text-[var(--text-muted)]">Oct {20+i}</span> */}
-                        </div>
+                {/* Day Tabs */}
+                <div className="flex overflow-x-auto gap-2 mb-6 pb-2 no-scrollbar">
+                    {DAYS.map(day => (
+                        <button
+                            key={day.value}
+                            onClick={() => setSelectedDay(day.value)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedDay === day.value
+                                    ? 'bg-[var(--primary)] text-white shadow-lg'
+                                    : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] border border-[var(--border)]'
+                                }`}
+                        >
+                            {day.label}
+                        </button>
                     ))}
-                    <div className="bg-[var(--surface)] p-4 text-center border-b border-[var(--border)]">
-                        <span className="block font-bold text-red-500">{DAYS[0]}</span>
+                </div>
+
+                {/* Grid */}
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr>
+                                    <th className="p-4 border-b border-r border-[var(--border)] w-20 bg-[var(--background)] sticky left-0 z-10 text-[var(--text-muted)]">
+                                        Время
+                                    </th>
+                                    {rooms.map(room => (
+                                        <th key={room.id} className="p-4 border-b border-r border-[var(--border)] min-w-[200px] bg-[var(--background)] text-[var(--text)]">
+                                            {room.name}
+                                        </th>
+                                    ))}
+                                    <th className="p-4 border-b border-[var(--border)] min-w-[200px] bg-[var(--background)] text-[var(--text-muted)] italic">
+                                        Без кабинета
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {TIME_SLOTS.map(hour => (
+                                    <tr key={hour} className="group hover:bg-[var(--surface-hover)]">
+                                        {/* Time Column */}
+                                        <td className="p-4 border-b border-r border-[var(--border)] text-center text-sm font-bold text-[var(--text-muted)] bg-[var(--background)] sticky left-0 z-10 group-hover:bg-[var(--surface-hover)]">
+                                            {hour}:00
+                                        </td>
+
+                                        {/* Room Columns */}
+                                        {rooms.map(room => {
+                                            const classes = getClasses(room.id, hour)
+                                            return (
+                                                <td key={room.id} className="p-2 border-b border-r border-[var(--border)] align-top h-24 transition-colors">
+                                                    {classes.map((cls, idx) => (
+                                                        <div key={idx} className="mb-2 p-2 rounded-lg bg-blue-50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 hover:shadow-md transition-all cursor-pointer">
+                                                            <div className="font-bold text-sm text-blue-900 dark:text-blue-100">{cls.name}</div>
+                                                            <div className="text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1 mt-1">
+                                                                <Users size={12} /> {cls.teacher.name}
+                                                            </div>
+                                                            <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                                                {cls.schedule.startTime} - {cls.schedule.endTime}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </td>
+                                            )
+                                        })}
+
+                                        {/* No Room Column */}
+                                        <td className="p-2 border-b border-[var(--border)] align-top bg-gray-50/50 dark:bg-gray-900/20">
+                                            {getClasses(null, hour).map((cls, idx) => (
+                                                <div key={idx} className="mb-2 p-2 rounded-lg bg-gray-100 border border-gray-200 text-gray-600">
+                                                    <div className="font-bold text-xs">{cls.name}</div>
+                                                    <div className="text-xs">{cls.teacher.name}</div>
+                                                </div>
+                                            ))}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-
-                    {/* Time Slots */}
-                    {TIME_SLOTS.map(hour => (
-                        <Fragment key={hour}>
-                            {/* Time Label */}
-                            <div key={`time-${hour}`} className="bg-[var(--surface)] p-4 text-xs font-medium text-[var(--text-muted)] border-r border-[var(--border)] flex items-start justify-center">
-                                {hour}:00
-                            </div>
-
-                            {/* Days Columns for this Hour */}
-                            {[1, 2, 3, 4, 5, 6, 0].map(dayIdx => {
-                                const classes = getClassesForSlot(dayIdx, hour)
-                                return (
-                                    <div key={`slot-${dayIdx}-${hour}`} className="bg-[var(--background)] min-h-[100px] p-1 border-r border-b border-[var(--border)] relative group">
-                                        {classes.map((cls, idx) => (
-                                            <div key={idx} className="bg-blue-100 border-l-4 border-blue-500 p-2 rounded text-xs mb-1 hover:shadow-md transition-shadow cursor-pointer">
-                                                <div className="font-bold text-blue-900 truncate">{cls.name}</div>
-                                                <div className="text-blue-700 flex items-center gap-1 mt-1">
-                                                    <MapPin size={10} /> {cls.room?.name || 'No Room'}
-                                                </div>
-                                                <div className="text-blue-600 flex items-center gap-1">
-                                                    <Users size={10} /> {cls.teacher.name.split(' ')[0]}
-                                                </div>
-                                                <div className="text-blue-500 flex items-center gap-1 mt-1">
-                                                    <Clock size={10} /> {cls.schedule.startTime} ({cls.schedule.duration}m)
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )
-                            })}
-                        </Fragment>
-                    ))}
                 </div>
             </main>
         </div>

@@ -139,6 +139,20 @@ export default function AttendancePage() {
                         <Button variant="primary" onClick={handleSave} isLoading={isSaving}>
                             Сохранить
                         </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                if (!selectedGroup) return
+                                const newAttendance = { ...attendance }
+                                selectedGroup.students.forEach(s => {
+                                    newAttendance[s.id] = 'PRESENT'
+                                })
+                                setAttendance(newAttendance)
+                            }}
+                            className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                        >
+                            Все присутствуют
+                        </Button>
                     </div>
                 </Card>
 

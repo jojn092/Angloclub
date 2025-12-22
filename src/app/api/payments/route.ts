@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { paymentSchema } from '@/lib/validations'
+import { logAction } from '@/lib/audit'
 
 // GET: Fetch recent payments
 export async function GET(request: Request) {
@@ -49,11 +50,6 @@ export async function POST(request: Request) {
             })
 
             // 2. Update Student Balance (Increment balance)
-            // Assuming positive balance means they have money or paid. 
-            // Usually, "Balance" tracks credit. 
-            // If Student "buys" a course, balance goes DOWN (negative).
-            // If Student "pays", balance goes UP (positive/zero).
-            // Let's assume logical flow: Balance starts at 0. Payment adds to balance.
             await tx.student.update({
                 where: { id: studentId },
                 data: {
@@ -63,6 +59,8 @@ export async function POST(request: Request) {
 
             return payment
         })
+
+        await logAction('CREATE_PAYMENT', `Recorded payment of ${amount} for student ID: ${studentId}`)
 
         return NextResponse.json({ success: true, data: result })
     } catch (error) {
@@ -78,7 +76,7 @@ export async function DELETE(request: Request) {
         if (!id) return NextResponse.json({ success: false, error: 'ID required' }, { status: 400 })
 
         // Transaction: Delete Payment + Revert (Decrement) Student Balance
-        await prisma.$transaction(async (tx) => {
+        const deletedPayment = await prisma.$transaction(async (tx) => {
             const payment = await tx.payment.findUnique({ where: { id: Number(id) } })
             if (!payment) throw new Error('Payment not found')
 
@@ -88,7 +86,10 @@ export async function DELETE(request: Request) {
             })
 
             await tx.payment.delete({ where: { id: Number(id) } })
+            return payment
         })
+
+        await logAction('DELETE_PAYMENT', `Deleted payment ID: ${id} (Amount: ${deletedPayment.amount})`)
 
         return NextResponse.json({ success: true })
     } catch (error) {
@@ -125,6 +126,8 @@ export async function PUT(request: Request) {
             })
             return updatedPayment
         })
+
+        await logAction('UPDATE_PAYMENT', `Updated payment ID: ${id}`)
 
         return NextResponse.json({ success: true, data: result })
     } catch (error) {

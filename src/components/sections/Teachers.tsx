@@ -33,25 +33,24 @@ const teachers: Teacher[] = [
         ]
     },
     {
-        name: 'Мисс Назерке',
-        role: 'IELTS Expert',
-        image: '/images/teachers/nazerke.png',
-        details: [
-            { label: 'Образование', value: 'Nazarbayev University', icon: GraduationCap },
-            { label: 'Сертификаты', value: 'IELTS 7.0', icon: Award },
-            { label: 'Сильные стороны', value: 'легко работает с подростками, делает уроки живыми', icon: BookOpen },
-            { label: 'График', value: 'Пн, Ср, Пт / 16.00 - 21.00', icon: Calendar },
-        ]
-    },
-    {
         name: 'Мисс Сагынай',
-        role: 'IELTS & General',
+        role: 'IELTS Expert & General',
         image: '/images/teachers/sagynay.png',
         details: [
             { label: 'Образование', value: 'Nazarbayev University – Bachelor of Medical Science', icon: GraduationCap },
             { label: 'Сертификаты', value: 'IELTS 7.0', icon: Award },
             { label: 'Специализация', value: 'IELTS & General English', icon: BookOpen },
             { label: 'График', value: 'Сб, Вск / 11:00-19:00', icon: Calendar },
+        ]
+    },
+    {
+        name: 'Мисс Асем',
+        role: 'Педагог',
+        image: '/images/teachers/new_teacher.png',
+        details: [
+            { label: 'Образование', value: 'Coventry University Kazakhstan', icon: GraduationCap },
+            { label: 'Сертификаты', value: 'IELTS 7.5', icon: Award },
+            { label: 'Сильные стороны', value: 'Работаю по четкому плану, упор на слушание и разговорную часть', icon: BookOpen },
         ]
     },
     {

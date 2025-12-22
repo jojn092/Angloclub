@@ -12,6 +12,7 @@ import CourseCards from '@/components/sections/CourseCards'
 import Teachers from '@/components/sections/Teachers'
 import Contacts from '@/components/sections/Contacts'
 import LeadForm from '@/components/sections/LeadForm'
+import Snowfall from '@/components/ui/Snowfall'
 
 export default function Home() {
   const [translations, setTranslations] = useState<Record<string, unknown>>({})
@@ -92,6 +93,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
+      <Snowfall />
       <Header
         translations={translations as Record<string, string>}
         locale={locale}

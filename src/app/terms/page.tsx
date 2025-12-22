@@ -1,10 +1,31 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
 export default function TermsPage() {
+    const [translations, setTranslations] = useState<Record<string, unknown>>({})
+    const [locale, setLocale] = useState('ru')
+
+    useEffect(() => {
+        const savedLocale = localStorage.getItem('locale') || 'ru'
+        setLocale(savedLocale)
+        fetch(`/locales/${savedLocale}.json`)
+            .then(res => res.json())
+            .then(data => setTranslations(data))
+            .catch(() => {
+                fetch('/locales/ru.json').then(res => res.json()).then(data => setTranslations(data))
+            })
+    }, [])
+
     return (
         <div className="min-h-screen flex flex-col">
-            <Header />
+            <Header
+                translations={translations as Record<string, string>}
+                locale={locale}
+                onLocaleChange={() => { }}
+            />
             <main className="flex-grow max-w-4xl mx-auto px-4 py-12 text-[var(--text)]">
                 <h1 className="text-3xl font-bold mb-6">Условия использования – AngloClub.kz</h1>
                 <p className="text-[var(--text-secondary)] mb-8">Дата обновления: {new Date().toLocaleDateString('ru-RU')}</p>
@@ -69,7 +90,7 @@ export default function TermsPage() {
                     </section>
                 </div>
             </main>
-            <Footer />
+            <Footer translations={translations} />
         </div>
     )
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { groupSchema } from '@/lib/validations'
+import { logAction } from '@/lib/audit'
 
 // GET: Fetch all groups with relations
 export async function GET(request: Request) {
@@ -49,6 +50,46 @@ export async function POST(request: Request) {
 
         const { name, level, courseId, teacherId, roomId, days, time } = validation.data
 
+        // Conflict Check (Only if days/time provided)
+        if (days && time && days.length > 0) {
+            // Find potentially conflicting groups (Same teacher OR Same Room) on Same Days
+            const conflicts = await prisma.group.findMany({
+                where: {
+                    isActive: true,
+                    OR: [
+                        { teacherId: teacherId },
+                        roomId ? { roomId: roomId } : {}
+                    ],
+                    schedules: {
+                        some: {
+                            dayOfWeek: { in: days },
+                            startTime: time // Exact match for MVP. Ideally overlapping.
+                        }
+                    }
+                },
+                include: { teacher: true, room: true, schedules: true }
+            })
+
+            // Filter exact conflicts
+            const actualConflict = conflicts.find(g =>
+                g.schedules.some(s =>
+                    days.includes(s.dayOfWeek) &&
+                    s.startTime === time
+                )
+            )
+
+            if (actualConflict) {
+                const reason = actualConflict.teacherId === teacherId ?
+                    `Преподаватель ${actualConflict.teacher.name} занят` :
+                    `Аудитория ${actualConflict.room?.name} занята`
+
+                return NextResponse.json({
+                    success: false,
+                    error: `Конфликт расписания: ${reason} (Группа: ${actualConflict.name})`
+                }, { status: 409 })
+            }
+        }
+
         const group = await prisma.group.create({
             data: {
                 name,
@@ -81,6 +122,8 @@ export async function POST(request: Request) {
             }
         })
 
+        await logAction('CREATE_GROUP', `Created group "${group.name}" (ID: ${group.id})`)
+
         return NextResponse.json({ success: true, data: group })
     } catch (error) {
         console.error('Create group error:', error)
@@ -90,30 +133,46 @@ export async function POST(request: Request) {
         )
     }
 }
-// PUT: Update group (isActive, addStudent)
+
+// PUT: Update group (Full editing)
 export async function PUT(request: Request) {
     try {
         const body = await request.json()
-        const { id, isActive, addStudentId } = body
+        const { id, name, teacherId, roomId, isActive, addStudentIds, removeStudentIds } = body
 
         if (!id) {
             return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 })
         }
 
+        // Prepare data for update
+        const data: any = {}
+        if (name) data.name = name
+        if (teacherId) data.teacherId = teacherId
+        if (roomId) data.roomId = roomId
+        if (isActive !== undefined) data.isActive = isActive
+
+        // Handle relationships (Students)
+        if (addStudentIds || removeStudentIds) {
+            data.students = {}
+            if (addStudentIds && addStudentIds.length > 0) {
+                data.students.connect = addStudentIds.map((sid: number) => ({ id: sid }))
+            }
+            if (removeStudentIds && removeStudentIds.length > 0) {
+                data.students.disconnect = removeStudentIds.map((sid: number) => ({ id: sid }))
+            }
+        }
+
         const group = await prisma.group.update({
             where: { id },
-            data: {
-                isActive: isActive !== undefined ? isActive : undefined,
-                students: addStudentId ? {
-                    connect: { id: addStudentId }
-                } : undefined
-            },
+            data,
             include: {
                 course: true,
                 teacher: true,
                 _count: { select: { students: true } }
             }
         })
+
+        await logAction('UPDATE_GROUP', `Updated group "${group.name}" (ID: ${group.id}). Changes: ${JSON.stringify(body)}`)
 
         return NextResponse.json({ success: true, data: group })
     } catch (error) {

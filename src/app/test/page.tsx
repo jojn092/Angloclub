@@ -84,13 +84,21 @@ export default function TestPage() {
     useEffect(() => {
         const loadTranslations = async () => {
             try {
-                const res = await fetch('/locales/ru.json')
+                const savedLocale = localStorage.getItem('locale') || 'ru'
+                const res = await fetch(`/locales/${savedLocale}.json`)
                 if (res.ok) {
                     const data = await res.json()
                     setTranslations(data)
+                } else {
+                    throw new Error('Locale not found')
                 }
             } catch (error) {
                 console.error('Failed to load translations', error)
+                // Fallback
+                try {
+                    const fb = await fetch('/locales/ru.json')
+                    if (fb.ok) setTranslations(await fb.json())
+                } catch (e) { console.error('Fallback failed', e) }
             } finally {
                 setIsLoaded(true)
             }

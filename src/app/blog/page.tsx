@@ -12,6 +12,15 @@ export default function BlogIndex() {
     return (
         <main className="min-h-screen bg-[var(--background)] pt-24 pb-12">
             <div className="container mx-auto px-4">
+                <div className="mb-8">
+                    <Link
+                        href="/"
+                        className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
+                    >
+                        <ArrowRight size={20} className="rotate-180" />
+                        На главную
+                    </Link>
+                </div>
                 <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[var(--text)]">
                     Блог AngloClub
                 </h1>

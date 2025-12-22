@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react'
 import AdminHeader from '@/components/admin/AdminHeader'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { Plus, Search, User, X } from 'lucide-react'
+import { Plus, Search, User, X, Edit, Trash2, Phone, Mail } from 'lucide-react'
 
 interface Student {
     id: number
     name: string
     phone: string
+    email?: string
     balance: number
-    groups: { name: string }[]
+    groups: { id: number, name: string }[]
 }
 
 interface Group {
@@ -24,7 +25,10 @@ export default function StudentsPage() {
     const [groups, setGroups] = useState<Group[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [search, setSearch] = useState('')
+
+    // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [editingStudent, setEditingStudent] = useState<Student | null>(null)
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -34,7 +38,7 @@ export default function StudentsPage() {
 
     useEffect(() => {
         fetchStudents()
-        fetchGroups() // Pre-load groups for dropdown
+        fetchGroups()
     }, [search])
 
     const fetchStudents = async () => {
@@ -65,25 +69,66 @@ export default function StudentsPage() {
         }
     }
 
+    const handleOpenCreateManager = () => {
+        setEditingStudent(null)
+        setFormData({ name: '', phone: '', email: '', groupIds: [] })
+        setIsModalOpen(true)
+    }
+
+    const handleOpenEditManager = (student: Student) => {
+        setEditingStudent(student)
+        setFormData({
+            name: student.name,
+            phone: student.phone,
+            email: student.email || '',
+            groupIds: student.groups.map(g => g.id)
+        })
+        setIsModalOpen(true)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
         try {
-            const res = await fetch('/api/students', {
-                method: 'POST',
+            let url = '/api/students'
+            let method = 'POST'
+            if (editingStudent) {
+                url = `/api/students/${editingStudent.id}`
+                method = 'PUT'
+            }
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             })
+
             const data = await res.json()
             if (data.success) {
-                alert('Студент создан')
+                alert(editingStudent ? 'Данные обновлены' : 'Студент создан')
                 setIsModalOpen(false)
-                setFormData({ name: '', phone: '', email: '', groupIds: [] })
                 fetchStudents()
             } else {
                 alert(data.error || 'Ошибка')
             }
         } catch (error) {
             alert('Ошибка')
+        }
+    }
+
+    const handleDelete = async (id: number) => {
+        if (!confirm('Вы уверены, что хотите удалить этого студента? Это удалит всю историю обучения и платежей.')) return
+
+        try {
+            const res = await fetch(`/api/students/${id}`, { method: 'DELETE' })
+            if (res.ok) {
+                alert('Студент удален')
+                fetchStudents()
+            } else {
+                alert('Ошибка при удалении')
+            }
+        } catch (error) {
+            alert('Ошибка сети')
         }
     }
 
@@ -106,7 +151,7 @@ export default function StudentsPage() {
                     <Button
                         variant="primary"
                         leftIcon={<Plus size={20} />}
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={handleOpenCreateManager}
                     >
                         Добавить студента
                     </Button>
@@ -130,10 +175,10 @@ export default function StudentsPage() {
                         <thead className="bg-[var(--surface-hover)] border-b border-[var(--border)]">
                             <tr>
                                 <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Имя</th>
-                                <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Телефон</th>
+                                <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Контакты</th>
                                 <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Группы</th>
                                 <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Баланс</th>
-                                <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Действия</th>
+                                <th className="p-4 text-sm font-medium text-[var(--text-muted)] text-right">Действия</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--border)]">
@@ -144,23 +189,50 @@ export default function StudentsPage() {
                             ) : (
                                 students.map(student => (
                                     <tr key={student.id} className="hover:bg-[var(--surface-hover)] group">
-                                        <td className="p-4 text-sm font-medium text-[var(--text)] flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
-                                                {student.name.charAt(0)}
+                                        <td className="p-4 text-sm font-medium text-[var(--text)]">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                                    {student.name.charAt(0)}
+                                                </div>
+                                                <a href={`/admin/students/${student.id}`} className="hover:text-[var(--primary)] transition-colors">
+                                                    {student.name}
+                                                </a>
                                             </div>
-                                            {student.name}
                                         </td>
-                                        <td className="p-4 text-sm text-[var(--text-muted)]">{student.phone}</td>
                                         <td className="p-4 text-sm text-[var(--text-muted)]">
-                                            {student.groups.map(g => g.name).join(', ') || '-'}
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-1">
+                                                    <Phone size={12} /> {student.phone}
+                                                </div>
+                                                {student.email && (
+                                                    <div className="flex items-center gap-1">
+                                                        <Mail size={12} /> {student.email}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-sm text-[var(--text-muted)]">
+                                            <div className="flex flex-wrap gap-1">
+                                                {student.groups.map(g => (
+                                                    <span key={g.id} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">
+                                                        {g.name}
+                                                    </span>
+                                                ))}
+                                                {student.groups.length === 0 && '-'}
+                                            </div>
                                         </td>
                                         <td className={`p-4 text-sm font-bold ${student.balance < 0 ? 'text-red-500' : 'text-green-600'}`}>
                                             {student.balance.toLocaleString()} ₸
                                         </td>
-                                        <td className="p-4 text-sm">
-                                            <Button variant="ghost" size="sm" onClick={() => window.location.href = `/admin/students/${student.id}`}>
-                                                Профиль
-                                            </Button>
+                                        <td className="p-4 text-sm text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="ghost" size="sm" onClick={() => handleOpenEditManager(student)}>
+                                                    <Edit size={16} />
+                                                </Button>
+                                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleDelete(student.id)}>
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -175,7 +247,9 @@ export default function StudentsPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <div className="bg-[var(--surface)] w-full max-w-lg rounded-xl shadow-2xl border border-[var(--border)] flex flex-col max-h-[90vh]">
                         <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-[var(--text)]">Новый студент</h2>
+                            <h2 className="text-xl font-bold text-[var(--text)]">
+                                {editingStudent ? 'Редактировать студента' : 'Новый студент'}
+                            </h2>
                             <button onClick={() => setIsModalOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text)]"><X size={24} /></button>
                         </div>
 
@@ -211,8 +285,8 @@ export default function StudentsPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Добавить в группы</label>
-                                <div className="border border-[var(--border)] rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Группы</label>
+                                <div className="border border-[var(--border)] rounded-lg max-h-40 overflow-y-auto p-2 space-y-1 bg-[var(--background)]">
                                     {groups.map(g => (
                                         <div
                                             key={g.id}
@@ -236,7 +310,7 @@ export default function StudentsPage() {
                                     Отмена
                                 </Button>
                                 <Button type="submit" variant="primary" className="flex-1">
-                                    Создать
+                                    {editingStudent ? 'Сохранить' : 'Создать'}
                                 </Button>
                             </div>
                         </form>

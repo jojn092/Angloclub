@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { studentSchema } from '@/lib/validations'
+import { logAction } from '@/lib/audit'
 
 // GET: Fetch students with search and filtering
 export async function GET(request: Request) {
@@ -11,8 +12,8 @@ export async function GET(request: Request) {
 
         const where = search ? {
             OR: [
-                { name: { contains: search } }, // Case insensitive in SQLite?
-                { phone: { contains: search } }
+                { name: { contains: search, mode: 'insensitive' as const } },
+                { phone: { contains: search, mode: 'insensitive' as const } }
             ]
         } : {}
 
@@ -50,10 +51,12 @@ export async function POST(request: Request) {
                 phone,
                 email: email || null,
                 groups: groupIds ? {
-                    connect: groupIds.map(id => ({ id }))
+                    connect: groupIds.map((id: number) => ({ id }))
                 } : undefined
             }
         })
+
+        await logAction('CREATE_STUDENT', `Created student "${student.name}" (ID: ${student.id})`)
 
         return NextResponse.json({ success: true, data: student })
     } catch (error) {

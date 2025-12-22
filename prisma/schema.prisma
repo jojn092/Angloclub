@@ -23,6 +23,7 @@ model User {
   groups    Group[]  @relation("TeacherGroups")
   salary    Salary[]
   logs      Log[]
+  trialLessons TrialLesson[] // Teacher can conduct trial lessons
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -107,6 +108,7 @@ model Student {
   groups    Group[]
   attendance Attendance[]
   payments  Payment[]
+  mockExams MockExam[]
 
   createdAt DateTime @default(now())
 
@@ -155,6 +157,23 @@ model Payment {
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   
   recordedBy Int?
+}
+
+model MockExam {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @default(now())
+  type      String   @default("IELTS") // IELTS, TOEFL, General
+  
+  listening Float    @default(0)
+  reading   Float    @default(0)
+  writing   Float    @default(0)
+  speaking  Float    @default(0)
+  overall   Float    @default(0)
+  
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  comment   String?
 }
 
 model Salary {
@@ -237,4 +256,19 @@ model TelegramMessage {
   isRead       Boolean      @default(false)
   
   createdAt    DateTime     @default(now())
+}
+
+model TrialLesson {
+  id        Int      @id @default(autoincrement())
+  name      String   // Name of the prospect
+  phone     String
+  date      DateTime
+  price     Int      @default(1500)
+  isPaid    Boolean  @default(false)
+  
+  teacherId Int?
+  teacher   User?    @relation(fields: [teacherId], references: [id])
+  
+  status    String   @default("scheduled") // scheduled, completed, missed, cancelled
+  createdAt DateTime @default(now())
 }

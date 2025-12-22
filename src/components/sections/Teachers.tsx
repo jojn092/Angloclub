@@ -23,7 +23,7 @@ interface Teacher {
 const teachers: Teacher[] = [
     {
         name: 'Мисс Мира',
-        role: 'Магистр',
+        role: 'Педагог',
         image: '/images/teachers/mira.png',
         details: [
             { label: 'Образование', value: 'Astana International University (бакалавр), Eurasian National University (магистр)', icon: GraduationCap },
@@ -34,7 +34,7 @@ const teachers: Teacher[] = [
     },
     {
         name: 'Мисс Сагынай',
-        role: 'IELTS Expert & General',
+        role: 'IELTS & General',
         image: '/images/teachers/sagynay.png',
         details: [
             { label: 'Образование', value: 'Nazarbayev University – Bachelor of Medical Science', icon: GraduationCap },
@@ -45,7 +45,7 @@ const teachers: Teacher[] = [
     },
     {
         name: 'Мисс Асем',
-        role: 'Педагог',
+        role: 'IELTS & General',
         image: '/images/teachers/new_teacher.png',
         details: [
             { label: 'Образование', value: 'Coventry University Kazakhstan', icon: GraduationCap },

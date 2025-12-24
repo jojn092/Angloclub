@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 /* ============================================
    AngloClub Design System
@@ -88,7 +89,7 @@
 
 /* Dark Theme */
 /* Dark Theme - Sleek & Modern */
-[data-theme="dark"] {
+.dark {
   --primary: #818cf8;
   /* Indigo 400 */
   --primary-dark: #6366f1;

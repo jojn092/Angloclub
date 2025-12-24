@@ -34,6 +34,8 @@ export const studentSchema = z.object({
     email: z.string().email('Некорректный email').optional().or(z.literal('')),
     groupIds: z.array(z.number()).optional(),
     leadId: z.number().optional(),
+    motherPhone: z.string().optional(),
+    fatherPhone: z.string().optional(),
 })
 
 export const paymentSchema = z.object({

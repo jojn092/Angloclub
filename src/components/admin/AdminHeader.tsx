@@ -93,15 +93,7 @@ export default function AdminHeader({ onLogout, title }: AdminHeaderProps) {
                     </a>
 
                     {/* Navigation visible on Desktop */}
-                    {!title && (
-                        <nav className="hidden xl:flex items-center gap-1">
-                            {NAV_ITEMS.map(item => (
-                                <a key={item.label} href={item.href} className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] rounded-md transition-colors whitespace-nowrap">
-                                    {item.label}
-                                </a>
-                            ))}
-                        </nav>
-                    )}
+
                 </div>
 
                 {/* Global Search */}
@@ -168,17 +160,7 @@ export default function AdminHeader({ onLogout, title }: AdminHeaderProps) {
             </div>
 
             {/* Mobile Menu (Scrollable) */}
-            {!title && (
-                <div className="xl:hidden border-t border-[var(--border)] overflow-x-auto no-scrollbar">
-                    <div className="flex p-2 gap-2 min-w-max">
-                        {NAV_ITEMS.map(item => (
-                            <a key={item.label} href={item.href} className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-md whitespace-nowrap">
-                                {item.label}
-                            </a>
-                        ))}
-                    </div>
-                </div>
-            )}
+
         </header>
     )
 }

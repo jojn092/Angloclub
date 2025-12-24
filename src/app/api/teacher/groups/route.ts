@@ -1,34 +1,32 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
     try {
-        const token = request.headers.get('cookie')?.split('auth_token=')[1]?.split(';')[0]
-        if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+        const cookieStore = await cookies();
+        const token = cookieStore.get('auth_token')?.value;
 
-        const user = await verifyToken(token)
-        if (!user) return NextResponse.json({ success: false, error: 'Invalid Token' }, { status: 401 })
+        if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
-        // 1. Fetch groups where teacherId == user.id
-        // If ADMIN, fetch ALL? Or just "My Groups" for admin acting as teacher?
-        // Let's assume ADMIN sees everything or nothing? 
-        // For debugging, if admin, let's show all.
-
-        const where = (user.role === 'TEACHER') ? { teacherId: user.id } : {}
+        const user = await verifyToken(token);
+        if (!user || user.role !== 'TEACHER') {
+            return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+        }
 
         const groups = await prisma.group.findMany({
-            where,
+            where: { teacherId: user.id },
             include: {
                 course: { select: { name: true } },
                 room: { select: { name: true } },
                 _count: { select: { students: true } }
-            },
-            orderBy: { id: 'desc' }
-        })
+            }
+        });
 
-        return NextResponse.json({ success: true, data: groups })
+        return NextResponse.json({ success: true, data: groups });
     } catch (error) {
-        return NextResponse.json({ success: false, error: 'Failed' }, { status: 500 })
+        console.error('Teacher Groups Error:', error);
+        return NextResponse.json({ success: false, error: 'Server Error' }, { status: 500 });
     }
 }

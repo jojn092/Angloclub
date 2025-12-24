@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // 4. Role-based Access Control (RBAC)
-    if (isAdminPath && user.role !== 'ADMIN' && user.role !== 'MANAGER') {
+    if (isAdminPath && user.role !== 'ADMIN' && user.role !== 'MANAGER' && user.role !== 'SUPER_ADMIN') {
         // Teachers cannot access /admin
         if (user.role === 'TEACHER') {
             return NextResponse.redirect(new URL('/teacher', request.url))
@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
-    if (isTeacherPath && user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+    if (isTeacherPath && user.role !== 'TEACHER' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
         // Only teachers (and admins for debugging) can (or should?) access /teacher
         // Actually Admins might want to see teacher view, so allowing ADMIN is good.
         return NextResponse.redirect(new URL('/admin', request.url))

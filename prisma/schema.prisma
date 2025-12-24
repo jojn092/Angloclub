@@ -23,6 +23,7 @@ model User {
   groups    Group[]  @relation("TeacherGroups")
   salary    Salary[]
   logs      Log[]
+  reports   TeacherReport[]
   trialLessons TrialLesson[] // Teacher can conduct trial lessons
   
   createdAt DateTime @default(now())
@@ -63,6 +64,8 @@ model Course {
   name      String
   price     Int      @default(0)
   groups    Group[]
+  materials Material[]
+  homework  Homework[]
 }
 
 model Classroom {
@@ -78,7 +81,7 @@ model Group {
   level       String
   
   courseId    Int
-  course      Course   @relation(fields: [courseId], references: [id])
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   
   teacherId   Int
   teacher     User     @relation("TeacherGroups", fields: [teacherId], references: [id])
@@ -114,15 +117,20 @@ model Student {
 
   status    String   @default("active") // active, left, graduated
   leftReason String?
+  
+  motherPhone String?
+  fatherPhone String?
 }
 
 model ScheduleTemplate {
   id        Int      @id @default(autoincrement())
   groupId   Int
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  dayOfWeek Int      // 1-7 (Mon-Sun)
+  daysOfWeek String  // "1,2,3" (Mon, Tue, Wed)
   startTime String   // "HH:MM"
   endTime   String   // "HH:MM"
+  validFrom DateTime @default(now())
+  validTo   DateTime?
 }
 
 model Lesson {
@@ -144,15 +152,22 @@ model Attendance {
   lessonId  Int
   lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   status    String   // PRESENT, ABSENT, EXCUSED
+  grade     Int?     // 1-10 or 1-100
+  comment   String?
 }
 
 model Payment {
   id        Int      @id @default(autoincrement())
   amount    Int
   date      DateTime @default(now())
-  method    String
+  method    String   // Cash, Card, Transfer
   comment   String?
   
+  status    String   @default("paid") // pending, paid, overdue, refunded
+  type      String   @default("monthly") // monthly, one_time
+  period    String?  // e.g. "December 2025" or "2025-12"
+  dueDate   DateTime?
+
   studentId Int
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   
@@ -272,3 +287,49 @@ model TrialLesson {
   status    String   @default("scheduled") // scheduled, completed, missed, cancelled
   createdAt DateTime @default(now())
 }
+
+model Material {
+  id        Int      @id @default(autoincrement())
+  title     String
+  type      String   // PDF, Video, Link, Doc
+  url       String   // File path or URL
+  courseId  Int
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Homework {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  deadline    DateTime?
+  courseId    Int
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model TeacherReport {
+  id             Int      @id @default(autoincrement())
+  teacherId      Int
+  teacher        User     @relation(fields: [teacherId], references: [id])
+  period         String   // "2025-12"
+  
+  lessons1h      Int      @default(0)
+  lessons15h     Int      @default(0)
+  trials         Int      @default(0)
+  ielts          Int      @default(0)
+  speaking       Int      @default(0)
+  
+  comment        String?
+  status         String   @default("submitted") // submitted, approved, paid
+  createdAt      DateTime @default(now())
+}
+
+model MessageTemplate {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

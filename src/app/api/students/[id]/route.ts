@@ -44,7 +44,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         const { id: idStr } = await params
         const id = Number(idStr)
         const body = await request.json()
-        const { name, phone, email, balance, status, leftReason, groupIds } = body
+        const { name, phone, email, balance, status, leftReason, groupIds, motherPhone, fatherPhone } = body
 
         if (isNaN(id)) return NextResponse.json({ success: false, error: 'Invalid ID' }, { status: 400 })
 
@@ -55,6 +55,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         if (name) updateData.name = name
         if (phone) updateData.phone = phone
         if (email !== undefined) updateData.email = email
+        if (motherPhone !== undefined) updateData.motherPhone = motherPhone
+        if (fatherPhone !== undefined) updateData.fatherPhone = fatherPhone
         if (balance !== undefined) updateData.balance = balance
         if (status) updateData.status = status
         if (leftReason !== undefined) updateData.leftReason = leftReason

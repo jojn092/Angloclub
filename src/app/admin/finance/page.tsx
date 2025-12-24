@@ -1,324 +1,267 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import AdminHeader from '@/components/admin/AdminHeader'
-import Card from '@/components/ui/Card'
-import Button from '@/components/ui/Button'
-import { Plus, TrendingUp, TrendingDown, DollarSign, Wallet } from 'lucide-react'
-import { clsx } from 'clsx'
-
-interface Stats {
-    income: number
-    expense: number
-    profit: number
-    month: string
-}
-
-interface Transaction {
-    id: string
-    date: string
-    amount: number
-    type: 'income' | 'expense'
-    category: string
-    description: string
-    method?: string
-}
+import { PageHeader } from "@/components/ui/PageHeader";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { ru } from 'date-fns/locale';
+import { ArrowUpCircle, ArrowDownCircle, Wallet, Plus, Loader2, BarChart3, TrendingUp } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import Card from "@/components/ui/Card";
 
 export default function FinancePage() {
-    const [stats, setStats] = useState<Stats | null>(null)
-    const [transactions, setTransactions] = useState<Transaction[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
+    const [summary, setSummary] = useState<any>(null);
+    const [analytics, setAnalytics] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
-    const [editingItem, setEditingItem] = useState<Transaction | null>(null)
-
-    const [form, setForm] = useState({
+    // Expense Form
+    const [expenseForm, setExpenseForm] = useState({
         amount: '',
         category: 'Rent',
         description: '',
-        date: new Date().toISOString().slice(0, 10)
-    })
+        date: format(new Date(), 'yyyy-MM-dd')
+    });
 
     useEffect(() => {
-        fetchData()
-    }, [month])
+        fetchSummary();
+    }, []);
 
-    const fetchData = async () => {
-        setIsLoading(true)
+    const fetchSummary = async () => {
+        setLoading(true);
         try {
-            const [statsRes, transRes] = await Promise.all([
-                fetch(`/api/finance/stats?month=${month}`),
-                fetch('/api/finance/transactions?limit=100')
-            ])
-            const sData = await statsRes.json()
-            const tData = await transRes.json()
+            const res = await fetch('/api/admin/finance/summary');
+            const data = await res.json();
+            if (data.success) {
+                setSummary(data.data);
+            }
 
-            if (sData.success) setStats(sData.data)
-            if (tData.success) setTransactions(tData.data)
+            const aRes = await fetch('/api/admin/finance/analytics');
+            const aData = await aRes.json();
+            if (aData.success) {
+                setAnalytics(aData.data);
+            }
         } catch (error) {
-            console.error(error)
+            console.error(error);
         } finally {
-            setIsLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
-    const handleDelete = async (id: string, type: 'income' | 'expense') => {
-        if (!confirm('Вы уверены, что хотите удалить эту запись?')) return
-
-        const endpoint = type === 'income' ? '/api/payments' : '/api/expenses'
-        const cleanId = id.replace(/^[pe]-/, '')
-
+    const handleCreateExpense = async (e: React.FormEvent) => {
+        e.preventDefault();
         try {
-            const res = await fetch(`${endpoint}?id=${cleanId}`, { method: 'DELETE' })
-            if (res.ok) {
-                fetchData()
-            } else {
-                alert('Ошибка при удалении')
-            }
-        } catch (error) {
-            alert('Ошибка сети')
-        }
-    }
-
-    const openEditModal = (t: Transaction) => {
-        setEditingItem(t)
-        setForm({
-            amount: t.amount.toString(),
-            category: t.category,
-            description: t.description,
-            date: t.date.slice(0, 10)
-        })
-        setIsModalOpen(true)
-    }
-
-    const openCreateModal = () => {
-        setEditingItem(null)
-        setForm({
-            amount: '',
-            category: 'Rent',
-            description: '',
-            date: new Date().toISOString().slice(0, 10)
-        })
-        setIsModalOpen(true)
-    }
-
-    const handleSave = async (e: React.FormEvent) => {
-        e.preventDefault()
-
-        try {
-            let url = '/api/expenses'
-            let method = 'POST'
-            let body: any = { ...form, amount: Number(form.amount) }
-
-            if (editingItem) {
-                method = 'PUT'
-                url = editingItem.type === 'income' ? '/api/payments' : '/api/expenses'
-                const cleanId = editingItem.id.replace(/^[pe]-/, '')
-                body.id = Number(cleanId)
-            } else {
-                // Creating new expense
-                // Note: Current UI only supports adding "Expense". Income usually comes from Payments.
-                // If user wants to add generic Income, we don't have UI for it yet unless we add a Type selector.
-                // Assuming "Add Expense" is the main manual action.
-                url = '/api/expenses'
-            }
-
-            const res = await fetch(url, {
-                method,
+            const res = await fetch('/api/admin/finance/expenses', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            })
-
+                body: JSON.stringify(expenseForm)
+            });
             if (res.ok) {
-                alert(editingItem ? 'Обновлено' : 'Расход добавлен')
-                setIsModalOpen(false)
-                fetchData() // Refresh stats
-            } else {
-                alert('Ошибка сохранения')
+                setIsExpenseModalOpen(false);
+                setExpenseForm({ amount: '', category: 'Other', description: '', date: format(new Date(), 'yyyy-MM-dd') });
+                fetchSummary();
             }
         } catch (error) {
-            alert('Ошибка')
+            alert('Error');
         }
-    }
+    };
+
+    if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
     return (
-        <div className="min-h-screen bg-[var(--background)]">
-            <AdminHeader onLogout={() => window.location.href = '/admin/login'} />
-            <main className="max-w-7xl mx-auto px-4 py-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-[var(--text)]">Движение средств (ДДС)</h1>
-                    <div className="flex gap-4">
-                        <Button
-                            variant="outline"
-                            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
-                            onClick={() => window.location.href = '/admin/finance/debtors'}
-                        >
-                            Список должников
-                        </Button>
-                        <input
-                            type="month"
-                            className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
-                            value={month}
-                            onChange={e => setMonth(e.target.value)}
-                        />
-                        <Button
-                            variant="primary"
-                            leftIcon={<Plus size={20} />}
-                            onClick={openCreateModal}
-                        >
-                            Добавить расход
-                        </Button>
+        <div>
+            <div className="flex justify-between items-center mb-6">
+                <PageHeader
+                    title="Финансы (ДДС)"
+                    description="Движение денежных средств, доходы и расходы"
+                />
+                <button
+                    onClick={() => setIsExpenseModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg shadow-red-500/20 transition-all font-medium"
+                >
+                    <Plus className="w-4 h-4" />
+                    Добавить расход
+                </button>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 opacity-90 mb-2">
+                        <ArrowUpCircle className="w-5 h-5" />
+                        <span className="font-medium">Приход</span>
                     </div>
+                    <div className="text-3xl font-bold">{summary?.totalIncome.toLocaleString()} ₸</div>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-green-700 mb-1">Доходы</p>
-                                <h3 className="text-2xl font-bold text-green-800">
-                                    +{stats?.income.toLocaleString() || 0} ₸
-                                </h3>
-                            </div>
-                            <div className="p-2 bg-white/50 rounded-lg text-green-600">
-                                <TrendingUp size={24} />
-                            </div>
-                        </div>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-red-700 mb-1">Расходы</p>
-                                <h3 className="text-2xl font-bold text-red-800">
-                                    -{stats?.expense.toLocaleString() || 0} ₸
-                                </h3>
-                            </div>
-                            <div className="p-2 bg-white/50 rounded-lg text-red-600">
-                                <TrendingDown size={24} />
-                            </div>
-                        </div>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-blue-700 mb-1">Прибыль</p>
-                                <h3 className={clsx("text-2xl font-bold", (stats?.profit || 0) >= 0 ? "text-blue-800" : "text-red-600")}>
-                                    {(stats?.profit || 0) > 0 ? '+' : ''}{stats?.profit.toLocaleString() || 0} ₸
-                                </h3>
-                            </div>
-                            <div className="p-2 bg-white/50 rounded-lg text-blue-600">
-                                <Wallet size={24} />
-                            </div>
-                        </div>
-                    </Card>
+                <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 opacity-90 mb-2">
+                        <ArrowDownCircle className="w-5 h-5" />
+                        <span className="font-medium">Расход</span>
+                    </div>
+                    <div className="text-3xl font-bold">{summary?.totalExpense.toLocaleString()} ₸</div>
                 </div>
 
-                {/* Recent Transactions Table */}
-                <Card padding="none" className="overflow-hidden">
-                    <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--surface)]">
-                        <h2 className="text-lg font-bold text-[var(--text)]">История операций</h2>
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 opacity-90 mb-2">
+                        <Wallet className="w-5 h-5" />
+                        <span className="font-medium">Чистая прибыль</span>
                     </div>
-                    <table className="w-full text-left">
-                        <thead className="bg-[var(--surface-hover)] border-b border-[var(--border)]">
-                            <tr>
-                                <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Дата</th>
-                                <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Тип</th>
-                                <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Категория</th>
-                                <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Описание</th>
-                                <th className="p-4 text-sm font-medium text-[var(--text-muted)]">Сумма</th>
-                                <th className="p-4 text-sm font-medium text-[var(--text-muted)] text-right">Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--border)]">
-                            {transactions.length === 0 ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-[var(--text-muted)]">Операций нет</td></tr>
-                            ) : (
-                                transactions.map(t => (
-                                    <tr key={t.id} className="hover:bg-[var(--surface-hover)] group">
-                                        <td className="p-4 text-sm text-[var(--text)]">
-                                            {new Date(t.date).toLocaleDateString('ru-RU')}
-                                        </td>
-                                        <td className="p-4 text-sm">
-                                            <span className={clsx(
-                                                "px-2 py-1 rounded text-xs font-bold",
-                                                t.type === 'income' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                                            )}>
-                                                {t.type === 'income' ? 'Приход' : 'Расход'}
+                    <div className="text-3xl font-bold">{summary?.netProfit.toLocaleString()} ₸</div>
+                </div>
+            </div>
+
+            {/* Analytics Section */}
+            <div className="space-y-8">
+                {/* 1. Monthly Chart */}
+                <Card>
+                    <h3 className="text-lg font-bold mb-6 text-slate-800 dark:text-white flex items-center gap-2">
+                        <BarChart3 className="text-blue-600" />
+                        Динамика финансов (последние 6 месяцев)
+                    </h3>
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={analytics?.monthly || []}>
+                                <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
+                                <XAxis
+                                    dataKey="name"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                    dy={10}
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                    tickFormatter={(value) => `${value / 1000}k`}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: '#f1f5f9', opacity: 0.5 }}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                />
+                                <Legend />
+                                <Bar name="Доход" dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                <Bar name="Расход" dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+
+                {/* 2. Group Profitability */}
+                <Card>
+                    <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
+                        <TrendingUp className="text-emerald-500" />
+                        Прибыльность групп (текущий месяц)
+                    </h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="text-xs text-slate-500 uppercase border-b border-slate-100 dark:border-slate-800">
+                                    <th className="p-3 font-semibold">Группа</th>
+                                    <th className="p-3 font-semibold">Учитель</th>
+                                    <th className="p-3 font-semibold text-right">Студентов</th>
+                                    <th className="p-3 font-semibold text-right">Доход</th>
+                                    <th className="p-3 font-semibold text-right">Расход (ЗП)</th>
+                                    <th className="p-3 font-semibold text-right">Прибыль</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {analytics?.groups.map((g: any) => (
+                                    <tr key={g.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="p-3 font-medium text-slate-800 dark:text-white">{g.name}</td>
+                                        <td className="p-3 text-slate-600 dark:text-slate-400 text-sm">{g.teacherName}</td>
+                                        <td className="p-3 text-right text-slate-600 dark:text-slate-400">{g.studentsCount}</td>
+                                        <td className="p-3 text-right font-medium text-green-600">+{g.income.toLocaleString()}</td>
+                                        <td className="p-3 text-right font-medium text-red-500">-{g.expense.toLocaleString()}</td>
+                                        <td className="p-3 text-right">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${g.profit >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {g.profit.toLocaleString()} ₸
                                             </span>
                                         </td>
-                                        <td className="p-4 text-sm"><span className="text-[var(--text-secondary)]">{t.category}</span></td>
-                                        <td className="p-4 text-sm text-[var(--text-muted)]">{t.description || '-'}</td>
-                                        <td className={clsx("p-4 text-sm font-bold", t.type === 'income' ? "text-green-600" : "text-red-600")}>
-                                            {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString()} ₸
-                                        </td>
-                                        <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button variant="ghost" size="sm" onClick={() => openEditModal(t)}>✎</Button>
-                                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleDelete(t.id, t.type)}>✕</Button>
-                                        </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </Card>
-            </main>
 
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-[var(--surface)] w-full max-w-md rounded-xl shadow-2xl border border-[var(--border)]">
-                        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-[var(--text)]">
-                                {editingItem ? 'Редактировать запись' : 'Добавить расход'}
-                            </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-[var(--text-muted)]">✕</button>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Income List */}
+                    <Card>
+                        <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
+                            <ArrowUpCircle className="text-green-500" />
+                            Последние поступления
+                        </h3>
+                        <div className="space-y-3">
+                            {summary?.payments.slice(0, 5).map((p: any) => (
+                                <div key={p.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                    <div>
+                                        <div className="font-medium text-slate-900 dark:text-white">{p.student.name}</div>
+                                        <div className="text-xs text-slate-500">{format(new Date(p.date), 'dd.MM.yyyy')}</div>
+                                    </div>
+                                    <div className="font-bold text-green-600">+{p.amount.toLocaleString()} ₸</div>
+                                </div>
+                            ))}
                         </div>
-                        <form onSubmit={handleSave} className="p-6 space-y-4">
+                    </Card>
+
+                    {/* Expense List */}
+                    <Card>
+                        <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
+                            <ArrowDownCircle className="text-red-500" />
+                            Последние расходы
+                        </h3>
+                        <div className="space-y-3">
+                            {summary?.expenses.slice(0, 5).map((e: any) => (
+                                <div key={e.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                    <div>
+                                        <div className="font-medium text-slate-900 dark:text-white">{e.category}</div>
+                                        <div className="text-xs text-slate-500">{e.description} • {format(new Date(e.date), 'dd.MM.yyyy')}</div>
+                                    </div>
+                                    <div className="font-bold text-red-500">-{e.amount.toLocaleString()} ₸</div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+            </div>
+
+            {/* Expense Modal */}
+            {isExpenseModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-xl p-6">
+                        <h2 className="text-xl font-bold mb-4 dark:text-white">Добавить расход</h2>
+                        <form onSubmit={handleCreateExpense} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Сумма</label>
-                                <input type="number" required className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                    value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+                                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Сумма</label>
+                                <input required type="number" className="w-full px-4 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700" value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Категория</label>
-                                <select className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                    value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Категория</label>
+                                <select className="w-full px-4 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700" value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })}>
                                     <option value="Rent">Аренда</option>
                                     <option value="Salary">Зарплата</option>
                                     <option value="Marketing">Маркетинг</option>
                                     <option value="Office">Офис</option>
-                                    <option value="Utilities">Коммунальные</option>
-                                    <option value="Other">Прочее</option>
-                                    {/* Add Income categories if editing income? */}
-                                    {editingItem?.type === 'income' && (
-                                        <>
-                                            <option value="Tuition">Оплата за обучение</option>
-                                            <option value="Books">Книги</option>
-                                        </>
-                                    )}
+                                    <option value="Other">Другое</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Дата</label>
-                                <input type="date" className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                    value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Описание</label>
+                                <input type="text" className="w-full px-4 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700" value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Описание</label>
-                                <input type="text" className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                    value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Дата</label>
+                                <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} />
                             </div>
-                            <Button type="submit" variant="primary" className="w-full">
-                                {editingItem ? 'Сохранить изменения' : 'Сохранить'}
-                            </Button>
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={() => setIsExpenseModalOpen(false)} className="flex-1 py-2 text-slate-500">Отмена</button>
+                                <button type="submit" className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Сохранить</button>
+                            </div>
                         </form>
                     </div>
                 </div>
             )}
         </div>
-    )
+    );
 }

@@ -40,7 +40,7 @@ export default function TeacherGroupPage() {
 
     const fetchGroup = async () => {
         try {
-            const res = await fetch(`/api/groups/${id}`)
+            const res = await fetch(`/api/teacher/groups/${id}`)
             const data = await res.json()
             if (data.success) {
                 setGroup(data.data)
@@ -99,10 +99,9 @@ export default function TeacherGroupPage() {
     if (!group) return <div className="p-8 text-center text-red-500">Группа не найдена</div>
 
     return (
-        <div className="min-h-screen bg-[var(--background)]">
-            <TeacherHeader onLogout={() => window.location.href = '/admin/login'} />
+        <div className="space-y-6">
 
-            <main className="max-w-4xl mx-auto px-4 py-8">
+            <div className="w-full">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-[var(--text)]">{group.name}</h1>
@@ -176,7 +175,7 @@ export default function TeacherGroupPage() {
                         </Button>
                     </div>
                 </Card>
-            </main>
+            </div>
         </div>
     )
 }

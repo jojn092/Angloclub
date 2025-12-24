@@ -1,92 +1,122 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { NextResponse } from 'next/server';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
     try {
-        // Auth Check
-        const token = request.headers.get('cookie')?.split('auth_token=')[1]?.split(';')[0]
-        if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+        const cookieStore = await cookies();
+        const token = cookieStore.get('auth_token')?.value;
+        const decoded = await verifyToken(token as string);
 
-        // Parse Body
-        const { groupId, date, records } = await request.json()
-
-        if (!groupId || !date || !records) {
-            return NextResponse.json({ success: false, error: 'Missing data' }, { status: 400 })
+        if (!decoded || decoded.role !== 'TEACHER') {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Transaction:
-        // 1. Find or Create Lesson for this Group + Date
-        // 2. Upsert Attendance records
+        const body = await request.json();
+        const { lessonId, groupId, date, records } = body;
 
-        try {
-            const result = await prisma.$transaction(async (tx) => {
-                // 1. Find/Create Lesson
-                let lesson = await tx.lesson.findFirst({
-                    where: {
-                        groupId,
-                        date: new Date(date)
-                    }
-                })
+        let targetLessonId = lessonId;
 
-                if (!lesson) {
-                    lesson = await tx.lesson.create({
-                        data: {
-                            groupId,
-                            date: new Date(date),
-                            isCompleted: true // Mark as completed since we took attendance
-                        }
-                    })
-                }
+        // Case 1: Just updating existing lesson by ID
+        if (targetLessonId) {
+            const lesson = await prisma.lesson.findUnique({
+                where: { id: targetLessonId },
+                include: { group: true }
+            });
 
-                // 2. Save Attendance
+            if (!lesson || lesson.group.teacherId !== decoded.id) {
+                return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
+            }
+        }
+        // Case 2: Finding/Creating lesson by Group + Date
+        else if (groupId && date) {
+            // Verify group ownership first
+            const group = await prisma.group.findUnique({
+                where: { id: Number(groupId) }
+            });
 
+            if (!group || group.teacherId !== decoded.id) {
+                return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
+            }
 
-                // Correct approach without schema change:
-                // Delete existing attendance for this lesson/students and re-insert?
-                // Or iterate and check.
+            // Find existing lesson or create new one
+            // We need to parse date string strictly? Or assumt YYYY-MM-DD
+            // Prisma stores DateTime. A simple string compare might not accept new Date(date).
+            // Let's assume start of day / exact match logic if we want to be precise, 
+            // but for now let's hope finding by timestamp works if we use ISO string.
+            // Actually, best to use "gte" and "lt" for the day range if strict,
+            // OR if the app strictly uses exact timestamps.
+            // Simplified: Try to find a lesson with this exact date (as stored).
 
-                // Let's implement Delete + Create for simplicity and robustness for this session.
-                // Note: This deletes ALL attendance for this lesson before adding new.
-                // Optimization: Only delete for students in `records`?
-                // Let's Keep it simple:
+            // To be safe, let's just find ANY lesson on this day for this group.
+            const startOfDay = new Date(date);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(date);
+            endOfDay.setHours(23, 59, 59, 999);
 
-                // 2. Upsert manually
-                for (const record of records) {
-                    const existing = await tx.attendance.findFirst({
-                        where: {
-                            studentId: record.studentId,
-                            lessonId: lesson.id
-                        }
-                    })
-
-                    if (existing) {
-                        await tx.attendance.update({
-                            where: { id: existing.id },
-                            data: { status: record.status }
-                        })
-                    } else {
-                        await tx.attendance.create({
-                            data: {
-                                studentId: record.studentId,
-                                lessonId: lesson.id,
-                                status: record.status
-                            }
-                        })
+            let lesson = await prisma.lesson.findFirst({
+                where: {
+                    groupId: Number(groupId),
+                    date: {
+                        gte: startOfDay,
+                        lte: endOfDay
                     }
                 }
+            });
 
-                return lesson
-            })
-
-            return NextResponse.json({ success: true, data: result })
-
-        } catch (dbError) {
-            console.error('DB Error:', dbError)
-            return NextResponse.json({ success: false, error: 'Database error' }, { status: 500 })
+            if (!lesson) {
+                // Create new lesson
+                lesson = await prisma.lesson.create({
+                    data: {
+                        groupId: Number(groupId),
+                        date: new Date(date), // set to the specific time passed or default? Passed 'date' is usually YYYY-MM-DD.
+                        // If it's pure date string, new Date(date) might be UTC or Local.
+                        // Let's force it to be noon or consistent.
+                        // If 'date' is '2025-12-25', new Date() is '2025-12-25T00:00:00.000Z'
+                        duration: 60, // Default duration
+                        topic: 'Тема урока',
+                        isCompleted: false
+                    }
+                });
+            }
+            targetLessonId = lesson.id;
+        } else {
+            return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
         }
 
+
+        // Transaction to save attendance and update lesson
+        await prisma.$transaction(async (tx) => {
+            // 1. Delete existing attendance for this lesson (to allow updates/overwrites)
+            // Be careful if we just created it, it's empty anyway.
+            await tx.attendance.deleteMany({
+                where: { lessonId: targetLessonId }
+            });
+
+            // 2. Create new attendance records
+            if (records && records.length > 0) {
+                await tx.attendance.createMany({
+                    data: records.map((r: any) => ({
+                        lessonId: targetLessonId,
+                        studentId: r.studentId,
+                        status: r.status, // 'PRESENT', 'ABSENT', 'EXCUSED'
+                        grade: r.grade ? Number(r.grade) : null,
+                        comment: r.comment || null
+                    }))
+                });
+            }
+
+            // 3. Mark lesson as completed
+            await tx.lesson.update({
+                where: { id: targetLessonId },
+                data: { isCompleted: true }
+            });
+        });
+
+        return NextResponse.json({ success: true });
     } catch (error) {
-        return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
+        console.error('Attendance Submit Error:', error);
+        return NextResponse.json({ success: false, error: 'Failed to submit' }, { status: 500 });
     }
 }

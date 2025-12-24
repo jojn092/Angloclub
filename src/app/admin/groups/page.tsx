@@ -1,318 +1,359 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import AdminHeader from '@/components/admin/AdminHeader'
-import Card from '@/components/ui/Card'
-import Button from '@/components/ui/Button'
-import { Plus, Users, BookOpen, Clock, Trash2, X } from 'lucide-react'
+import { PageHeader } from "@/components/ui/PageHeader";
+import { DataTable } from "@/components/ui/DataTable";
+import { useState, useEffect } from "react";
+import { GraduationCap, Search, Filter, Loader2, Plus, X, Check } from "lucide-react";
 
-// Define Interfaces
-interface Group {
-    id: number
-    name: string
-    level: string
-    isActive: boolean
-    course: { name: string }
-    teacher: { id: number, name: string }
-    room: { id: number, name: string } | null
-    students: { id: number, name: string }[]
-    _count: { students: number }
-}
-
-interface Teacher { id: number, name: string }
-interface Room { id: number, name: string }
-interface Student { id: number, name: string }
+const columns = [
+    { key: 'id', label: '#', width: '50px', align: 'center' as const },
+    { key: 'name', label: 'Название группы' },
+    { key: 'level', label: 'Уровень' },
+    { key: 'subjectName', label: 'Предмет' },
+    { key: 'teacherName', label: 'Преподаватель' },
+    { key: 'roomName', label: 'Кабинет' },
+    { key: 'studentsCount', label: 'Студенты', align: 'center' as const },
+];
 
 export default function GroupsPage() {
-    const [groups, setGroups] = useState<Group[]>([])
-    const [teachers, setTeachers] = useState<Teacher[]>([])
-    const [rooms, setRooms] = useState<Room[]>([])
-    const [students, setStudents] = useState<Student[]>([]) // All students for adding
-    const [isLoading, setIsLoading] = useState(true)
+    const [groups, setGroups] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [search, setSearch] = useState('');
+
+    // Dropdown data
+    const [courses, setCourses] = useState<any[]>([]);
+    const [teachers, setTeachers] = useState<any[]>([]);
+    const [rooms, setRooms] = useState<any[]>([]);
+    const [allStudents, setAllStudents] = useState<any[]>([]);
 
     // Modal State
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-    const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
-
-    // Edit Form State
-    const [editForm, setEditForm] = useState({
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingGroup, setEditingGroup] = useState<any>(null);
+    const [formData, setFormData] = useState({
         name: '',
+        level: '',
+        courseId: '',
         teacherId: '',
         roomId: '',
-        isActive: true,
-        studentsToAdd: [] as string[], // Selected IDs to add
-        studentsToRemove: [] as number[] // IDs to remove
-    })
-
-    useEffect(() => {
-        Promise.all([
-            fetchGroups(),
-            fetchTeachers(),
-            fetchRooms(),
-            fetchStudents()
-        ]).finally(() => setIsLoading(false))
-    }, [])
+        studentIds: [] as number[]
+    });
+    const [isSaving, setIsSaving] = useState(false);
+    const [studentSearch, setStudentSearch] = useState('');
 
     const fetchGroups = async () => {
-        const res = await fetch('/api/groups')
-        const data = await res.json()
-        if (data.success) setGroups(data.data)
-    }
-
-    const fetchTeachers = async () => {
-        const res = await fetch('/api/users/teachers')
-        const data = await res.json()
-        if (Array.isArray(data)) setTeachers(data)
-    }
-
-    const fetchRooms = async () => {
-        const res = await fetch('/api/rooms')
-        const data = await res.json()
-        if (data.success) setRooms(data.data)
-    }
-
-    const fetchStudents = async () => {
-        const res = await fetch('/api/students')
-        const data = await res.json()
-        if (data.success) setStudents(data.data)
-    }
-
-    const handleEditClick = (group: Group) => {
-        setSelectedGroup(group)
-        setEditForm({
-            name: group.name,
-            teacherId: group.teacher.id.toString(),
-            roomId: group.room?.id.toString() || '',
-            isActive: group.isActive,
-            studentsToAdd: [],
-            studentsToRemove: []
-        })
-        setIsEditModalOpen(true)
-    }
-
-    const handleSaveGroup = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!selectedGroup) return
-
+        setIsLoading(true);
         try {
-            const body = {
-                id: selectedGroup.id,
-                name: editForm.name,
-                teacherId: Number(editForm.teacherId),
-                roomId: editForm.roomId ? Number(editForm.roomId) : null,
-                isActive: editForm.isActive,
-                addStudentIds: editForm.studentsToAdd.map(Number),
-                removeStudentIds: editForm.studentsToRemove
+            const res = await fetch('/api/groups');
+            const data = await res.json();
+            if (data.success) {
+                const formatted = data.data.map((g: any) => ({
+                    ...g,
+                    subjectName: g.course?.name || '-',
+                    teacherName: g.teacher?.name || '-',
+                    roomName: g.room?.name || '-',
+                    studentsCount: g._count?.students || 0
+                })).filter((g: any) => g.name.toLowerCase().includes(search.toLowerCase()));
+                setGroups(formatted);
             }
+        } catch (error) { console.error(error); }
+        finally { setIsLoading(false); }
+    };
 
-            const res = await fetch(`/api/groups`, {
-                method: 'PUT',
+    const fetchDependencies = async () => {
+        try {
+            const [cRes, tRes, rRes, sRes] = await Promise.all([
+                fetch('/api/subjects'),
+                fetch('/api/teachers'),
+                fetch('/api/rooms'),
+                fetch('/api/students')
+            ]);
+
+            const cData = await cRes.json();
+            if (cData.success) setCourses(cData.data);
+
+            const tData = await tRes.json();
+            if (tData.success) setTeachers(tData.data);
+
+            const rData = await rRes.json();
+            if (rData.success) setRooms(rData.data);
+
+            const sData = await sRes.json();
+            if (sData.success) setAllStudents(sData.data);
+
+        } catch (e) { console.error(e) }
+    };
+
+    useEffect(() => {
+        fetchGroups();
+        fetchDependencies();
+    }, [search]);
+
+    // -- Handlers --
+    const handleEdit = (item: any) => {
+        setEditingGroup(item);
+        setFormData({
+            name: item.name,
+            level: item.level,
+            courseId: item.courseId,
+            teacherId: item.teacherId,
+            roomId: item.roomId || '',
+            studentIds: [] // Loading existing students is separate and maybe expensive, for now empty or TODO
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleCreate = () => {
+        setEditingGroup(null);
+        setFormData({ name: '', level: '', courseId: '', teacherId: '', roomId: '', studentIds: [] });
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (item: any) => {
+        if (!confirm('Удалить группу?')) return;
+        try {
+            await fetch(`/api/groups/${item.id}`, { method: 'DELETE' });
+            fetchGroups();
+        } catch (e) { alert('Ошибка удаления'); }
+    };
+
+    const toggleStudent = (id: number) => {
+        setFormData(prev => {
+            const exists = prev.studentIds.includes(id);
+            if (exists) return { ...prev, studentIds: prev.studentIds.filter(sid => sid !== id) };
+            return { ...prev, studentIds: [...prev.studentIds, id] };
+        });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        try {
+            const url = editingGroup ? `/api/groups/${editingGroup.id}` : '/api/groups';
+            const method = editingGroup ? 'PUT' : 'POST';
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            })
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) { setIsModalOpen(false); fetchGroups(); }
+            else { alert('Ошибка сохранения'); }
+        } catch (e) { console.error(e); }
+        finally { setIsSaving(false); }
+    };
 
-            if (res.ok) {
-                alert('Группа успешно обновлена!')
-                setIsEditModalOpen(false)
-                fetchGroups()
-            } else {
-                alert('Ошибка при сохранении')
-            }
-        } catch (error) {
-            alert('Ошибка сети')
-        }
-    }
-
-    // Toggle student for removal in the list
-    const toggleRemoveStudent = (studentId: number) => {
-        if (editForm.studentsToRemove.includes(studentId)) {
-            setEditForm(prev => ({ ...prev, studentsToRemove: prev.studentsToRemove.filter(id => id !== studentId) }))
-        } else {
-            setEditForm(prev => ({ ...prev, studentsToRemove: [...prev.studentsToRemove, studentId] }))
-        }
-    }
+    const filteredStudents = allStudents.filter(s =>
+        s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
+        s.phone.includes(studentSearch)
+    );
 
     return (
-        <div className="min-h-screen bg-[var(--background)]">
-            <AdminHeader onLogout={() => window.location.href = '/admin/login'} />
-            <main className="max-w-7xl mx-auto px-4 py-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-[var(--text)]">Управление Группами</h1>
-                    <Button
-                        variant="primary"
-                        leftIcon={<Plus size={20} />}
-                        onClick={() => window.location.href = '/admin/groups/new'}
-                    >
-                        Создать группу
-                    </Button>
+        <div>
+            <PageHeader
+                title="Группы"
+                description="Управление учебными группами"
+            />
+
+            {/* Top Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{groups.length}</h3>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Всего групп</p>
                 </div>
+            </div>
 
-                {isLoading ? (
-                    <div className="text-center py-12 text-[var(--text-muted)]">Загрузка...</div>
-                ) : groups.length === 0 ? (
-                    <div className="text-center py-12 text-[var(--text-muted)] border rounded-xl border-dashed border-[var(--border)]">
-                        Групп пока нет.
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {groups.map(group => (
-                            <Card key={group.id} className="hover:border-[var(--primary)] transition-colors group relative">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-[var(--text)] group-hover:text-[var(--primary)] transition-colors">
-                                            {group.name}
-                                        </h3>
-                                        <p className="text-sm text-[var(--text-secondary)]">{group.level}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className={`px-2 py-1 rounded text-xs font-bold mb-2 block ${group.isActive ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'}`}>
-                                            {group.isActive ? 'Active' : 'Inactive'}
-                                        </span>
-                                        <Button variant="ghost" size="sm" onClick={() => handleEditClick(group)}>
-                                            Редактировать
-                                        </Button>
-                                    </div>
+            {/* Filters Section */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 mb-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="w-full md:max-w-md relative">
+                    <input
+                        type="text"
+                        placeholder="Поиск группы..."
+                        className="w-full pl-4 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                </div>
+                <button
+                    onClick={handleCreate}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium shadow-md shadow-blue-500/20 transition-all whitespace-nowrap"
+                >
+                    <Plus className="w-4 h-4" />
+                    Создать группу
+                </button>
+            </div>
+
+            {isLoading ? (
+                <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-slate-400" /></div>
+            ) : (
+                <DataTable
+                    columns={columns}
+                    data={groups}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />
+            )}
+
+            {/* Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-2xl bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-800 flex flex-col max-h-[90vh]">
+                        {/* Header - Teal */}
+                        <div className="px-6 py-5 bg-teal-500 flex justify-between items-center shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-md">
+                                    <Plus className="w-5 h-5 text-white" />
                                 </div>
-
-                                <div className="space-y-2 text-sm text-[var(--text-muted)]">
-                                    <div className="flex items-center gap-2">
-                                        <BookOpen size={16} />
-                                        <span>{group.course.name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Users size={16} />
-                                        <span>{group.teacher.name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={16} />
-                                        <span>{group._count.students} студентов</span>
-                                    </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-white">
+                                        {editingGroup ? 'Редактировать группу' : 'Добавить группу'}
+                                    </h2>
+                                    <p className="text-teal-100 text-xs font-medium">
+                                        {editingGroup ? 'Изменение параметров группы' : 'Создание новой группы'}
+                                    </p>
                                 </div>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-            </main>
-
-            {/* Edit Modal */}
-            {isEditModalOpen && selectedGroup && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-[var(--surface)] w-full max-w-2xl rounded-xl shadow-2xl border border-[var(--border)] max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center sticky top-0 bg-[var(--surface)] z-10">
-                            <h2 className="text-xl font-bold text-[var(--text)]">Редактирование группы</h2>
-                            <button onClick={() => setIsEditModalOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text)]"><X /></button>
+                            </div>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
 
-                        <form onSubmit={handleSaveGroup} className="p-6 space-y-6">
-                            {/* Basic Details */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Form - Scrollable Content */}
+                        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6">
+
+                            {/* Group Details */}
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Название</label>
+                                    <label className="text-sm font-semibold text-slate-300 block mb-2">Название группы</label>
                                     <input
-                                        type="text"
                                         required
-                                        className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                        value={editForm.name}
-                                        onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                        type="text"
+                                        placeholder="Введите название группы"
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all"
+                                        value={formData.name}
+                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Статус</label>
-                                    <select
-                                        className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                        value={editForm.isActive ? 'true' : 'false'}
-                                        onChange={e => setEditForm({ ...editForm, isActive: e.target.value === 'true' })}
-                                    >
-                                        <option value="true">Активна</option>
-                                        <option value="false">Архив</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Преподаватель</label>
-                                    <select
-                                        className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                        value={editForm.teacherId}
-                                        onChange={e => setEditForm({ ...editForm, teacherId: e.target.value })}
-                                    >
-                                        {teachers.map(t => (
-                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Аудитория</label>
-                                    <select
-                                        className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                        value={editForm.roomId}
-                                        onChange={e => setEditForm({ ...editForm, roomId: e.target.value })}
-                                    >
-                                        <option value="">Без аудитории</option>
-                                        {rooms.map(r => (
-                                            <option key={r.id} value={r.id}>{r.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
 
-                            <hr className="border-[var(--border)]" />
-
-                            {/* Students Management */}
-                            <div>
-                                <h3 className="text-lg font-bold text-[var(--text)] mb-4">Участники</h3>
-
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Добавить студентов</label>
-                                    <select
-                                        multiple
-                                        className="w-full h-32 px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
-                                        value={editForm.studentsToAdd}
-                                        onChange={e => {
-                                            // Handle multiple select
-                                            const options = Array.from(e.target.selectedOptions, option => option.value)
-                                            setEditForm({ ...editForm, studentsToAdd: options })
-                                        }}
-                                    >
-                                        {students.filter(s => !selectedGroup.students.some(gs => gs.id === s.id)).map(s => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                        ))}
-                                    </select>
-                                    <p className="text-xs text-[var(--text-muted)] mt-1">Зажмите Ctrl (Windows) или Cmd (Mac) для выбора нескольких.</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-300 block mb-2">Предмет *</label>
+                                        <select
+                                            required
+                                            className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all appearance-none"
+                                            value={formData.courseId}
+                                            onChange={e => setFormData({ ...formData, courseId: e.target.value })}
+                                        >
+                                            <option value="">Выберите предмет</option>
+                                            {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-300 block mb-2">Уровень</label>
+                                        <select
+                                            className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all appearance-none"
+                                            value={formData.level}
+                                            onChange={e => setFormData({ ...formData, level: e.target.value })}
+                                        >
+                                            <option value="">Выберите уровень</option>
+                                            <option value="Beginner">Beginner</option>
+                                            <option value="Elementary">Elementary</option>
+                                            <option value="Pre-Intermediate">Pre-Intermediate</option>
+                                            <option value="Intermediate">Intermediate</option>
+                                            <option value="Upper-Intermediate">Upper-Intermediate</option>
+                                            <option value="Advanced">Advanced</option>
+                                        </select>
+                                    </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-[var(--text-secondary)]">Текущие студенты (нажмите корзину для удаления)</label>
-                                    <div className="bg-[var(--background)] rounded-lg border border-[var(--border)] divide-y divide-[var(--border)]">
-                                        {selectedGroup.students.length === 0 && <div className="p-4 text-sm text-[var(--text-muted)]">В группе нет студентов</div>}
-                                        {selectedGroup.students.map(student => (
-                                            <div key={student.id} className={
-                                                `p-3 flex justify-between items-center ${editForm.studentsToRemove.includes(student.id) ? 'bg-red-50 opacity-50' : ''}`
-                                            }>
-                                                <span className="text-[var(--text)]">{student.name}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleRemoveStudent(student.id)}
-                                                    className={`p-2 rounded-full ${editForm.studentsToRemove.includes(student.id) ? 'text-red-600 bg-red-100' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'}`}
-                                                >
-                                                    {editForm.studentsToRemove.includes(student.id) ? 'Вернуть' : <Trash2 size={16} />}
-                                                </button>
-                                            </div>
-                                        ))}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-300 block mb-2">Преподаватель</label>
+                                        <select
+                                            required
+                                            className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all appearance-none"
+                                            value={formData.teacherId}
+                                            onChange={e => setFormData({ ...formData, teacherId: e.target.value })}
+                                        >
+                                            <option value="">Выберите преподавателя</option>
+                                            {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-300 block mb-2">Кабинет</label>
+                                        <select
+                                            className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all appearance-none"
+                                            value={formData.roomId}
+                                            onChange={e => setFormData({ ...formData, roomId: e.target.value })}
+                                        >
+                                            <option value="">Без кабинета</option>
+                                            {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                        </select>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-4 pt-4">
-                                <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditModalOpen(false)}>
+                            {/* Students Selection */}
+                            <div className="space-y-3 pt-2">
+                                <label className="text-sm font-semibold text-slate-300 block">Студенты</label>
+                                <input
+                                    type="text"
+                                    placeholder="Поиск по имени или телефону..."
+                                    className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm"
+                                    value={studentSearch}
+                                    onChange={e => setStudentSearch(e.target.value)}
+                                />
+
+                                <div className="h-48 overflow-y-auto bg-slate-800/50 rounded-xl border border-slate-700 p-2 space-y-1 custom-scrollbar">
+                                    {filteredStudents.length === 0 ? (
+                                        <div className="text-center py-8 text-slate-500 text-sm">Нет студентов</div>
+                                    ) : (
+                                        filteredStudents.map(student => {
+                                            const isSelected = formData.studentIds.includes(student.id);
+                                            return (
+                                                <div
+                                                    key={student.id}
+                                                    onClick={() => toggleStudent(student.id)}
+                                                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-slate-700/50' : 'hover:bg-slate-700/30'
+                                                        }`}
+                                                >
+                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-teal-500 border-teal-500' : 'border-slate-500'
+                                                        }`}>
+                                                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-slate-200">{student.name}</p>
+                                                        <p className="text-xs text-slate-500">{student.phone}</p>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                                <p className="text-xs text-slate-500">Выбрано студентов: {formData.studentIds.length}</p>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-6 border-t border-slate-800">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="px-6 py-3 rounded-xl bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition-all border border-slate-700 hover:border-slate-600"
+                                >
                                     Отмена
-                                </Button>
-                                <Button type="submit" variant="primary" className="flex-1">
-                                    Сохранить изменения
-                                </Button>
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="px-8 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-lg shadow-teal-500/20 transition-all"
+                                >
+                                    {isSaving ? 'Сохранение...' : (editingGroup ? 'Сохранить изменения' : 'Создать группу')}
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
         </div>
-    )
+    );
 }

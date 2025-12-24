@@ -43,13 +43,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: validation.error.message }, { status: 400 })
         }
 
-        const { name, phone, email, groupIds } = validation.data
+        const { name, phone, email, groupIds, motherPhone, fatherPhone } = validation.data
 
         const student = await prisma.student.create({
             data: {
                 name,
                 phone,
                 email: email || null,
+                motherPhone: motherPhone || null,
+                fatherPhone: fatherPhone || null,
                 groups: groupIds ? {
                     connect: groupIds.map((id: number) => ({ id }))
                 } : undefined

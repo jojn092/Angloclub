@@ -128,7 +128,7 @@
         "workHours": "Дс-Сб: 9:00 - 21:00",
         "social": "Біз әлеуметтік желілерде",
         "links": "Жылдам сілтемелер",
-        "copyright": "© 2025 AngloClub Astana. Барлық құқықтар қорғалған."
+        "copyright": "© {year} AngloClub Astana. Барлық құқықтар қорғалған."
     },
     "about": {
         "title": "Мектеп туралы",

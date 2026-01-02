@@ -120,7 +120,7 @@
         "workHours": "Ежедневно: 9:00 - 21:00",
         "social": "Мы в соцсетях",
         "links": "Быстрые ссылки",
-        "copyright": "© 2025 AngloClub Astana. Все права защищены."
+        "copyright": "© {year} AngloClub Astana. Все права защищены."
     },
     "about": {
         "title": "О школе",

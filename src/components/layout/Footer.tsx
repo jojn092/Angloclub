@@ -158,7 +158,7 @@ export default function Footer({ translations = {} }: FooterProps) {
                 {/* Bottom Bar */}
                 <div className="mt-12 pt-8 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-[var(--text-muted)]">
-                        {t.footer?.copyright || `© ${new Date().getFullYear()} AngloClub Astana. Все права защищены.`}
+                        {(t.footer?.copyright || '© {year} AngloClub Astana. Все права защищены.').replace('{year}', new Date().getFullYear().toString())}
                     </p>
                     <div className="flex gap-4 text-sm">
                         <Link href="/privacy" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">

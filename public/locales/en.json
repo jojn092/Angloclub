@@ -128,7 +128,7 @@
         "workHours": "Mon-Sat: 9:00 AM - 9:00 PM",
         "social": "Follow Us",
         "links": "Quick Links",
-        "copyright": "© 2025 AngloClub Astana. All rights reserved."
+        "copyright": "© {year} AngloClub Astana. All rights reserved."
     },
     "about": {
         "title": "About Us",

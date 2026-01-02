@@ -67,9 +67,11 @@ export async function POST(request: NextRequest) {
         `.trim()
 
         if (process.env.TELEGRAM_ADMIN_CHAT_ID) {
-            TelegramService.sendMessage(process.env.TELEGRAM_ADMIN_CHAT_ID, telegramMessage).catch((err) => {
+            try {
+                await TelegramService.sendMessage(process.env.TELEGRAM_ADMIN_CHAT_ID, telegramMessage)
+            } catch (err) {
                 console.error('[Lead API] Failed to send Telegram message:', err)
-            })
+            }
         } else {
             console.warn('[Lead API] TELEGRAM_ADMIN_CHAT_ID is not defined in .env. Notification skipped.')
         }

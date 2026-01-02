@@ -14,7 +14,10 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Send to Telegram
-        await TelegramService.sendMessage(chatId, text)
+        await TelegramService.sendMessage(chatId, text, {
+            parse_mode: body.parse_mode,
+            reply_markup: body.reply_markup
+        })
 
         // 2. Save to DB (Outgoing message)
         let internalChatId = dbChatId

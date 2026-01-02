@@ -25,6 +25,7 @@ model User {
   logs      Log[]
   reports   TeacherReport[]
   trialLessons TrialLesson[] // Teacher can conduct trial lessons
+  telegramChats TelegramChat[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -112,6 +113,7 @@ model Student {
   attendance Attendance[]
   payments  Payment[]
   mockExams MockExam[]
+  telegramChats TelegramChat[]
 
   createdAt DateTime @default(now())
 
@@ -249,6 +251,12 @@ model TelegramChat {
   
   leadId       Int?
   lead         Lead?     @relation(fields: [leadId], references: [id])
+
+  studentId    Int?
+  student      Student?  @relation(fields: [studentId], references: [id])
+
+  userId       Int?      // Linked Teacher/Admin
+  user         User?     @relation(fields: [userId], references: [id])
   
   messages     TelegramMessage[]
   

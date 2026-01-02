@@ -16,8 +16,8 @@ export interface TelegramMessage {
     date: number
     text?: string
     photo?: TelegramPhoto[]
-    voice?: TelegramVoice
-    document?: TelegramDocument
+    caption?: string
+    contact?: TelegramContact
 }
 
 export interface TelegramUser {
@@ -45,20 +45,11 @@ export interface TelegramPhoto {
     file_size?: number
 }
 
-export interface TelegramVoice {
-    file_id: string
-    file_unique_id: string
-    duration: number
-    mime_type?: string
-    file_size?: number
-}
-
-export interface TelegramDocument {
-    file_id: string
-    file_unique_id: string
-    file_name?: string
-    mime_type?: string
-    file_size?: number
+export interface TelegramContact {
+    phone_number: string
+    first_name: string
+    last_name?: string
+    user_id?: number
 }
 
 export interface TelegramCallbackQuery {
@@ -66,6 +57,37 @@ export interface TelegramCallbackQuery {
     from: TelegramUser
     message?: TelegramMessage
     data?: string
+}
+
+export interface SendMessageOptions {
+    parse_mode?: 'HTML' | 'MarkdownV2'
+    reply_markup?: InlineKeyboardMarkup | ReplyKeyboardMarkup | ReplyKeyboardRemove
+}
+
+export interface InlineKeyboardMarkup {
+    inline_keyboard: InlineKeyboardButton[][]
+}
+
+export interface InlineKeyboardButton {
+    text: string
+    url?: string
+    callback_data?: string
+}
+
+export interface ReplyKeyboardMarkup {
+    keyboard: KeyboardButton[][]
+    resize_keyboard?: boolean
+    one_time_keyboard?: boolean
+}
+
+export interface KeyboardButton {
+    text: string
+    request_contact?: boolean
+    request_location?: boolean
+}
+
+export interface ReplyKeyboardRemove {
+    remove_keyboard: true
 }
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
@@ -76,17 +98,23 @@ export class TelegramService {
     /**
      * Send a text message to a chat
      */
-    static async sendMessage(chatId: number | string, text: string) {
+    static async sendMessage(chatId: number | string, text: string, options: SendMessageOptions = {}) {
         if (!BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN is not defined')
+
+        const body: any = {
+            chat_id: chatId,
+            text: text,
+            parse_mode: options.parse_mode || 'HTML'
+        }
+
+        if (options.reply_markup) {
+            body.reply_markup = options.reply_markup
+        }
 
         const res = await fetch(`${API_URL}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: text,
-                parse_mode: 'HTML'
-            })
+            body: JSON.stringify(body)
         })
 
         if (!res.ok) {
@@ -104,8 +132,9 @@ export class TelegramService {
     static async handleUpdate(update: TelegramUpdate) {
         if (update.message) {
             await this.processMessage(update.message)
+        } else if (update.callback_query) {
+            await this.processCallback(update.callback_query)
         }
-        // Handle callback queries later
     }
 
     /**
@@ -114,9 +143,8 @@ export class TelegramService {
     private static async processMessage(msg: TelegramMessage) {
         const chatId = msg.chat.id.toString()
         const text = msg.text || ''
-        const type = msg.chat.type
 
-        // 1. Find or create Chat
+        // 1. Ensure Chat Exists
         let chat = await prisma.telegramChat.findUnique({
             where: { chatId }
         })
@@ -128,25 +156,58 @@ export class TelegramService {
                     username: msg.chat.username,
                     firstName: msg.chat.first_name,
                     lastName: msg.chat.last_name,
-                    type,
-                    photoUrl: '' // TODO: Fetch user profile photo
+                    type: msg.chat.type,
                 }
             })
-
-            // Auto-reply for new users?
-            // await this.sendMessage(chatId, "Здравствуйте! Менеджер скоро ответит вам.")
         }
 
-        // 2. Save Message
+        // 2. Handle Commands
+        if (text.startsWith('/')) {
+            const [command, ...args] = text.split(' ')
+            await this.handleCommand(chat, command, args)
+        }
+
+        // 3. Save Message History
         await prisma.telegramMessage.create({
             data: {
                 chatId: chat.id,
                 messageId: msg.message_id,
                 text: text,
                 isFromBot: false,
-                isRead: false,
-                // TODO: Handle photos/docs
+                isRead: false
             }
         })
+    }
+
+    private static async processCallback(cb: TelegramCallbackQuery) {
+        // TODO: Handle button clicks
+        console.log('Callback:', cb.data)
+    }
+
+    private static async handleCommand(chat: any, command: string, args: string[]) {
+        const chatId = chat.chatId
+
+        switch (command) {
+            case '/start':
+                await this.sendMessage(chatId, `<b>Doing Great!</b>\nДобро пожаловать в AngloClub Bot.\n\nИспользуйте /login чтобы привязать профиль (для учителей и студентов).`)
+                break
+
+            case '/help':
+                await this.sendMessage(chatId, `Список команд:\n/start - Начать\n/login - Войти в систему\n/help - Помощь`)
+                break
+
+            case '/login':
+                await this.sendMessage(chatId, `Чтобы привязать аккаунт, отправьте ваш контакт кнопкой ниже:`, {
+                    reply_markup: {
+                        keyboard: [[{ text: "📱 Отправить контакт", request_contact: true }]],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    }
+                })
+                break
+
+            default:
+                await this.sendMessage(chatId, `Неизвестная команда: ${command}`)
+        }
     }
 }

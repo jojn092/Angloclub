@@ -192,7 +192,6 @@ export default function SubjectsPage() {
                                         type="number"
                                         required
                                         min="0"
-                                        min="0"
                                         className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono font-bold text-lg"
                                         value={formData.price}
                                         onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}

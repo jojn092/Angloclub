@@ -10,6 +10,7 @@ interface User {
     id: number
     name: string
     email: string
+    phone: string | null
     role: string
     hourlyRate: number
 }
@@ -24,6 +25,7 @@ export default function UsersPage() {
     const [form, setForm] = useState({
         name: '',
         email: '',
+        phone: '',
         password: '',
         role: 'TEACHER',
         hourlyRate: 0
@@ -47,7 +49,7 @@ export default function UsersPage() {
 
     const openCreateModal = () => {
         setEditingUser(null)
-        setForm({ name: '', email: '', password: '', role: 'TEACHER', hourlyRate: 0 })
+        setForm({ name: '', email: '', phone: '', password: '', role: 'TEACHER', hourlyRate: 0 })
         setIsModalOpen(true)
     }
 
@@ -56,6 +58,7 @@ export default function UsersPage() {
         setForm({
             name: user.name,
             email: user.email,
+            phone: user.phone || '',
             password: '', // Leave empty to keep unchanged
             role: user.role,
             hourlyRate: user.hourlyRate
@@ -120,6 +123,7 @@ export default function UsersPage() {
                                 <div>
                                     <h3 className="font-bold text-[var(--text)]">{user.name}</h3>
                                     <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
+                                    <p className="text-sm text-[var(--text-secondary)]">{user.phone}</p>
                                     <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-700">
                                         {user.role}
                                     </span>
@@ -158,6 +162,12 @@ export default function UsersPage() {
                                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Email</label>
                                 <input type="email" required className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
                                     value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Телефон</label>
+                                <input type="tel" className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)]"
+                                    placeholder="+77001234567"
+                                    value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Почасовая ставка (тг/60мин)</label>
